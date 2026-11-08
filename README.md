@@ -1,6 +1,5 @@
 # Календарь звонков
 
-
 [![hexlet-check](https://github.com/lukyanzhukov/ai-for-developers-project-386/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/lukyanzhukov/ai-for-developers-project-386/actions)
 
 Учебный проект «Календарь звонков»: небольшой сервис записи на встречи по мотивам [Cal.com](https://cal.com/). Проект разрабатывается совместно с ИИ-агентами — от проектирования до запуска в облаке.
@@ -32,20 +31,133 @@
 
 ## Стек
 
-Пока не выбран.
+TypeScript 6, Node.js 24 LTS, Fastify 5; React 19, Vite и Mantine.
+Тесты — Vitest, линтер — Oxlint, форматирование — oxfmt, Git-хуки — hk.
+Версии окружения закреплены в `mise.toml`, зависимости — в `package.json` и `pnpm-lock.yaml`.
+
+Каркас следует официальным руководствам [Fastify](https://fastify.dev/docs/latest/Guides/Getting-Started/),
+[Vite](https://vite.dev/guide/) и [Mantine для Vite](https://mantine.dev/guides/vite/).
+Инструменты проверок выбраны по [dev-quality-gates](https://github.com/mokevnin/dev-quality-gates)
+(бывший dev-guardrails).
+
+### Контракт и SDK
+
+Единственный API каркаса: `GET /api/health` → `200 { "status": "ok" }`.
+`api/main.tsp` — источник контракта; `@typespec/openapi3` выпускает OpenAPI 3.0,
+`@hey-api/openapi-ts` — Fetch SDK, серверные типы и JSON Schema в `generated/`.
+Фронтенд и дымовой тест обращаются к серверу через этот SDK.
+
+```bash
+mise run generate
+```
+
+Результаты генерации хранятся в Git. Не редактируйте `generated/` вручную.
+`mise run check` повторяет генерацию и падает при любом расхождении, включая новые и удалённые файлы.
+При расхождении команда оставляет заново сгенерированные файлы для проверки и коммита.
+Генерируемый код исключён из линтера и форматтера, но участвует в проверке типов и сборке.
+
+Проверка цепочки выявила два ограничения:
+
+- Hey API 0.99.0 использует Compiler API TypeScript и не работает с TypeScript 7; закреплена совместимая версия 6.0.3.
+- Fastify-плагин Hey API находится в Beta и фактически генерирует только типы обработчиков.
+  Регистрация health-маршрута написана вручную, тип обработчика и JSON Schema ответа генерируются.
+  У health нет тела и параметров запроса; схемы входных данных появятся вместе с соответствующими операциями.
+
+### Структура
+
+- `api/` — TypeSpec-контракт.
+- `generated/` — OpenAPI, SDK, серверные типы и JSON Schema.
+- `server/` — Fastify и запуск приложения.
+- `web/` — React и Mantine.
+- `tests/` — один дымовой тест запуска собранного приложения.
+- `scripts/` — воспроизводимая генерация и проверка новых сообщений коммитов.
 
 ## Установка
 
-<!-- Опишите установку: клонирование, зависимости, переменные окружения -->
+Установите [mise](https://mise.jdx.dev/getting-started.html) и активируйте его в оболочке.
+Дальше всё окружение и команды проекта управляются через mise:
 
 ```bash
 git clone https://github.com/lukyanzhukov/ai-for-developers-project-386.git
 cd ai-for-developers-project-386
+mise trust
+mise install
+mise run install
+mise run check
 ```
+
+`mise install` устанавливает закреплённые инструменты. Хук `postinstall` вызывает ту же задачу
+`install`: установка зависимостей с frozen lockfile и установка Git-хуков через `hk install --mise`. Launcher подготавливает закреплённое окружение даже без активированной оболочки.
+Повторный `mise run install` безопасен и нужен, например, после обновления зависимостей в Git.
+Вход в каталог сам по себе не запускает серверы и не переустанавливает зависимости.
 
 ## Использование
 
-<!-- Добавьте примеры запуска и запись asciinema — именно это смотрит работодатель -->
+```bash
+mise run dev       # запуск API и Vite в фоне через mise daemons / pitchfork
+mise run status    # состояние обоих процессов
+mise run logs      # логи процессов
+mise run stop      # остановка обоих процессов
+```
+
+Интерфейс: <http://127.0.0.1:5173>. Vite проксирует `/api` на Fastify: <http://127.0.0.1:3000>.
+Настройки `HOST`, `PORT`, `WEB_PORT` заданы в `mise.toml`; секреты для каркаса не нужны.
+Для локальных переопределений используйте игнорируемый `mise.local.toml`.
+При смене портов daemons также измените `ready_port` соответствующего процесса.
+Daemons требуют `experimental = true`; версия pitchfork закреплена.
+Серверы остаются запущенными после выхода команды `dev`, остановка — явно через `stop`.
+
+Собранное приложение отдаёт API и фронтенд с одного адреса:
+
+```bash
+mise run build
+mise run start     # http://127.0.0.1:3000, остановка Ctrl+C
+```
+
+### Проверки
+
+```bash
+mise run check          # генерация, hk: линтер/формат/workflow, типы, сборка, smoke, коммиты
+mise run lint
+mise run format:check
+mise run typecheck
+mise run test           # сначала сборка, затем Vitest без watch-режима
+mise run fix            # исправления линтера и форматирование
+```
+
+Vitest автоматически находит `tests/**/*.test.ts`, выполняет тесты и сообщает результат.
+Единственный smoke-тест запускает собранное приложение на свободном порту, проверяет
+HTTP 200 и ответ через SDK, HTML и доступность JS фронтенда, затем завершает сервер.
+Таймауты и очистка процесса работают и при ошибке. Рендеринг в браузере и бронирование этот тест не проверяет.
+
+hk выполняет быстрые проверки изменённых файлов перед коммитом, commitlint — в `commit-msg`,
+полный `mise run check` — перед push. Проверки не исправляют файлы автоматически.
+Новый workflow `.github/workflows/ci.yml` вызывает тот же `mise run check` на каждый push.
+Учебный `hexlet-check.yml` сохранён без изменений. Actions закреплены по SHA; права CI — только чтение.
+
+### Сообщения коммитов
+
+Используем [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/):
+`<type>(<необязательная область>): <описание>`.
+Типы: `feat`, `fix`, `docs`, `refactor`, `test`, `build`, `ci`, `chore`, `style`, `perf`, `revert`.
+Для несовместимых изменений — `!` или footer `BREAKING CHANGE:`.
+
+```text
+chore: initialize application scaffold
+ci: run mise checks
+fix(api): handle invalid input
+```
+
+commitlint использует `@commitlint/config-conventional` (в том числе лимит заголовка 100 символов).
+CI проверяет диапазон новых коммитов из `COMMIT_FROM` / `COMMIT_TO`;
+локально проверяется история после коммита принятия соглашения, указанного в `scripts/check-commits.mjs`.
+Старая история не переписывается. Формат сообщения не заменяет проверку его смысла.
+
+База данных, Docker, авторизация, бронирование, coverage-порог и E2E полного сценария
+в этот шаг не входят. Knip, архитектурные ограничения и syncpack отложены до появления
+соответствующей структуры; отдельные конфигурационные валидаторы пока перекрываются
+компиляторами, hk и линтером workflow. Сканеры секретов, уязвимостей и бот обновлений
+рассмотрены, но будут подключаться отдельно: сетевые проверки не входят в текущий `check`.
 
 ---
 

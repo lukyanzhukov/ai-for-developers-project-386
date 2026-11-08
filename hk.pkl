@@ -1,0 +1,37 @@
+amends "package://github.com/jdx/hk/releases/download/v2.11.1/hk@2.11.1#/Config.pkl"
+
+steps {
+  ["lint"] {
+    glob = List("**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs")
+    exclude = List("generated/**", "dist/**", "node_modules/**")
+    check = "mise run lint -- {{files}}"
+  }
+  ["format"] {
+    glob = List("**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.json", "**/*.html", "**/*.yaml", "**/*.yml", "**/*.md")
+    exclude = List("generated/**", "dist/**", "node_modules/**", "pnpm-lock.yaml", ".github/workflows/hexlet-check.yml")
+    check = "mise run format:check -- {{files}}"
+  }
+  ["workflow"] {
+    glob = ".github/workflows/ci.yml"
+    check = "jactionlint {{files}}"
+  }
+}
+hooks {
+  ["pre-commit"] {
+    fix = false
+  }
+  ["commit-msg"] {
+    steps {
+      ["commitlint"] {
+        check = "pnpm exec commitlint --edit {{commit_msg_file}}"
+      }
+    }
+  }
+  ["pre-push"] {
+    steps {
+      ["check"] {
+        check = "mise run check"
+      }
+    }
+  }
+}

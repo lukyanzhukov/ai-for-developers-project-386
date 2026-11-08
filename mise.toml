@@ -1,0 +1,82 @@
+[tools]
+node = "24.22.2"
+pnpm = "12.18.0"
+hk = "2.11.1"
+shellcheck = "0.11.0"
+pitchfork = "2.33.1"
+"github:jdx/jactionlint" = "2.5.0"
+
+[settings]
+experimental = true
+
+[env]
+PORT = "3000"
+WEB_PORT = "5173"
+HOST = "127.0.0.1"
+
+[hooks]
+postinstall = "mise run install"
+
+[daemons.api]
+run = "exec node --watch server/main.ts"
+ready_port = 3000
+
+[daemons.web]
+run = "exec pnpm exec vite"
+ready_port = 5173
+
+[tasks.install]
+run = ["pnpm install --frozen-lockfile", "hk install --mise"]
+
+[tasks.generate]
+run = "pnpm run generate"
+
+[tasks."generate:check"]
+run = "node scripts/generate.mjs --check"
+
+[tasks.dev]
+run = "mise daemons start api web"
+
+[tasks.stop]
+run = "mise daemons stop api web"
+
+[tasks.status]
+run = "mise daemons status api web"
+
+[tasks.logs]
+run = "mise daemons logs"
+
+[tasks.build]
+run = "pnpm run build"
+
+[tasks.start]
+env = { NODE_ENV = "production" }
+run = "pnpm start"
+
+[tasks.lint]
+run = "pnpm run lint"
+
+[tasks."format:check"]
+run = "pnpm run format:check"
+
+[tasks.typecheck]
+run = "pnpm run typecheck"
+
+[tasks.test]
+depends = ["build"]
+run = "pnpm test"
+
+[tasks.fix]
+run = "pnpm run fix"
+
+[tasks."check:commits"]
+run = "node scripts/check-commits.mjs"
+
+[tasks.check]
+run = [
+  "mise run generate:check",
+  "hk check --all",
+  "mise run typecheck",
+  "mise run test",
+  "mise run check:commits",
+]
