@@ -26,7 +26,6 @@ export function MeetingTypes() {
   return (
     <Stack className="hero" gap="lg">
       <Title order={1}>Выберите тип встречи</Title>
-      <Text c="dimmed">Пока записаться на встречу через сервис нельзя.</Text>
       {state.status === "loading" ? (
         <Text component="output">Загрузка типов встреч…</Text>
       ) : state.status === "error" ? (

@@ -7,11 +7,25 @@ import { HealthSchema } from "../generated/api/schemas.gen.ts";
 import * as schemas from "../generated/api/schemas.gen.ts";
 import type { Availability, Booking, MeetingType } from "../generated/api/types.gen.ts";
 
+const timeZone = "Asia/Novokuznetsk";
+const ownerDate = (instant: Date) =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(instant);
+const overlaps = (bookings: Booking[], start: number, end: number) =>
+  bookings.some(
+    (booking) => start < Date.parse(booking.endsAt) && end > Date.parse(booking.startsAt),
+  );
+
 export async function createApp({
   meetingTypes = [],
   bookings = [],
   now = () => new Date(),
 }: { meetingTypes?: MeetingType[]; bookings?: Booking[]; now?: () => Date } = {}) {
+  const keys = new Map<string, { fingerprint: string; booking?: Booking }>();
   const app = Fastify({
     logger: true,
     ajv: { customOptions: { coerceTypes: false, keywords: ["components"] } },
@@ -33,7 +47,12 @@ export async function createApp({
       const fields = error.validation?.flatMap((violation) => {
         const field = violation.instancePath.split("/")[1] || violation.params.missingProperty;
         return field
-          ? [{ field: String(field), message: violation.message ?? "Недопустимое значение" }]
+          ? [
+              {
+                field: field === "idempotency-key" ? "Idempotency-Key" : String(field),
+                message: violation.message ?? "Недопустимое значение",
+              },
+            ]
           : [];
       });
       return reply.code(400).send({
@@ -47,7 +66,7 @@ export async function createApp({
   });
   const handlers: Pick<
     RouteHandlers,
-    "getHealth" | "listMeetingTypes" | "createMeetingType" | "getAvailability"
+    "getHealth" | "listMeetingTypes" | "createMeetingType" | "getAvailability" | "createBooking"
   > = {
     listMeetingTypes: async (_request, reply) =>
       reply.code(200).send({
@@ -75,6 +94,85 @@ export async function createApp({
       meetingTypes.push(item);
       return reply.code(201).send(item);
     },
+    createBooking: async (request, reply) => {
+      const { meetingTypeId, startsAt, guestName, guestEmail, note = "" } = request.body;
+      const start = Date.parse(startsAt);
+      if (!Number.isFinite(start))
+        return reply.code(400).send({
+          code: "VALIDATION_ERROR",
+          message: "Недопустимое время",
+          fields: [{ field: "startsAt", message: "Укажите корректное время UTC" }],
+        });
+      const key = String(request.headers["idempotency-key"]);
+      const fingerprint = JSON.stringify([meetingTypeId, startsAt, guestName, guestEmail, note]);
+      const previous = keys.get(key);
+      if (previous && previous.fingerprint !== fingerprint)
+        return reply.code(409).send({
+          code: "IDEMPOTENCY_CONFLICT",
+          message: "Данные изменились. Отправьте запись с новым ключом",
+        });
+      if (previous?.booking) return reply.code(200).send(previous.booking);
+      const entry = previous ?? { fingerprint };
+      keys.set(key, entry);
+      const meetingType = meetingTypes.find((item) => item.id === meetingTypeId);
+      if (!meetingType)
+        return reply
+          .code(404)
+          .send({ code: "MEETING_TYPE_NOT_FOUND", message: "Тип встречи не найден" });
+      const serverNow = now();
+      const end = start + meetingType.durationMinutes * 60000;
+      const date = ownerDate(new Date(start));
+      const today = ownerDate(serverNow);
+      const lastDay = new Date(`${today}T00:00:00Z`);
+      lastDay.setUTCDate(lastDay.getUTCDate() + 13);
+      if (start <= serverNow.getTime())
+        return reply.code(409).send({
+          code: "SLOT_EXPIRED",
+          message: "Выбранное время уже прошло. Выберите другой слот",
+        });
+      if (date < today || date > lastDay.toISOString().slice(0, 10))
+        return reply.code(409).send({
+          code: "SLOT_OUTSIDE_WINDOW",
+          message: "Выбранная дата вне окна записи. Выберите другой слот",
+        });
+      const opening = Date.parse(`${date}T09:00:00+07:00`);
+      const closing = Date.parse(`${date}T18:00:00+07:00`);
+      const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
+      // Date truncates sub-millisecond precision, so inspect the original seconds as well.
+      const zeroSeconds = /:00(?:\.0+)?Z$/.test(startsAt);
+      if (
+        weekday === 0 ||
+        weekday === 6 ||
+        start < opening ||
+        end > closing ||
+        (start - opening) % 900000 !== 0 ||
+        !zeroSeconds
+      )
+        return reply.code(400).send({
+          code: "INVALID_SLOT",
+          message: "Слот должен соответствовать рабочим часам и шагу 15 минут",
+        });
+      if (overlaps(bookings, start, end))
+        return reply
+          .code(409)
+          .send({ code: "SLOT_TAKEN", message: "Это время уже заняли. Выберите другой слот" });
+      const booking: Booking = {
+        id: randomUUID(),
+        meetingTypeId,
+        meetingTypeTitle: meetingType.title,
+        durationMinutes: meetingType.durationMinutes,
+        startsAt: new Date(start).toISOString(),
+        endsAt: new Date(end).toISOString(),
+        guestName,
+        guestEmail,
+        note,
+        createdAt: serverNow.toISOString(),
+      };
+      // The shared overlap check and both writes stay synchronous in this single process.
+      bookings.push(booking);
+      entry.booking = booking;
+      return reply.code(201).send(booking);
+    },
     getAvailability: async (request, reply) => {
       const meetingType = meetingTypes.find((item) => item.id === request.params.id);
       if (!meetingType)
@@ -82,13 +180,7 @@ export async function createApp({
           .code(404)
           .send({ code: "MEETING_TYPE_NOT_FOUND", message: "Тип встречи не найден" });
       const serverNow = now();
-      const timeZone = "Asia/Novokuznetsk";
-      const today = new Intl.DateTimeFormat("en-CA", {
-        timeZone,
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }).format(serverNow);
+      const today = ownerDate(serverNow);
       const days: Availability["days"][number][] = [];
       for (let offset = 0; offset < 14; offset++) {
         const day = new Date(`${today}T00:00:00Z`);
@@ -104,13 +196,7 @@ export async function createApp({
             start += 15 * 60000
           ) {
             const end = start + meetingType.durationMinutes * 60000;
-            if (
-              start > serverNow.getTime() &&
-              !bookings.some(
-                (booking) =>
-                  start < Date.parse(booking.endsAt) && end > Date.parse(booking.startsAt),
-              )
-            ) {
+            if (start > serverNow.getTime() && !overlaps(bookings, start, end)) {
               slots.push({
                 startsAt: new Date(start).toISOString(),
                 endsAt: new Date(end).toISOString(),
@@ -181,6 +267,36 @@ export async function createApp({
       },
     },
     handlers.createMeetingType,
+  );
+
+  app.post<{
+    Body: import("../generated/api/types.gen.ts").CreateBooking;
+    Headers: { "Idempotency-Key": string };
+  }>(
+    "/api/bookings",
+    {
+      preValidation: async (request) => {
+        if (request.body && typeof request.body === "object" && !Array.isArray(request.body)) {
+          for (const field of ["guestName", "guestEmail"] as const) {
+            if (typeof request.body[field] === "string")
+              request.body[field] = request.body[field].trim();
+          }
+        }
+      },
+      schema: {
+        body: { $ref: "contract#/components/schemas/CreateBooking" },
+        headers: {
+          type: "object",
+          required: ["idempotency-key"],
+          properties: { "idempotency-key": schemas.UuidSchema },
+        },
+        response: {
+          200: { $ref: "contract#/components/schemas/Booking" },
+          201: { $ref: "contract#/components/schemas/Booking" },
+        },
+      },
+    },
+    handlers.createBooking,
   );
 
   if (process.env.NODE_ENV === "production") {
