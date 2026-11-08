@@ -20,6 +20,7 @@ if (process.env.NODE_ENV === "production") {
   await app.register(fastifyStatic, {
     root: fileURLToPath(new URL("../web/", import.meta.url)),
   });
+  app.get("/booking", (_request, reply) => reply.sendFile("index.html"));
 }
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {

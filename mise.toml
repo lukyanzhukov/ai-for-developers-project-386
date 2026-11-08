@@ -26,7 +26,11 @@ run = "exec pnpm exec vite"
 ready_port = 5173
 
 [tasks.install]
-run = ["pnpm install --frozen-lockfile", "hk install --mise"]
+run = [
+  "pnpm install --frozen-lockfile",
+  "pnpm exec playwright install --with-deps --only-shell chromium",
+  "hk install --mise",
+]
 
 [tasks.generate]
 run = "pnpm run generate"
