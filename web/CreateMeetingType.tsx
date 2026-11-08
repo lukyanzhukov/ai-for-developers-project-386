@@ -174,7 +174,9 @@ export function CreateMeetingType() {
           Создать тип встречи
         </Button>
       </Stack>
-      <Anchor href="/booking">Публичный список типов встреч</Anchor>
+      <Anchor href="/booking" target="_blank" rel="noopener noreferrer">
+        Публичный список типов встреч
+      </Anchor>
     </Stack>
   );
 }
