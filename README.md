@@ -265,6 +265,10 @@ CI проверяет диапазон новых коммитов из `COMMIT_
 
 ## Docker и Render
 
+Публичный сервис: [Календарь звонков](https://call-calendar-386-o6lw.onrender.com).
+Render собирает Dockerfile из ветки `codex/docker-render-deploy` автоматически при push.
+Сервис работает на бесплатном плане во Frankfurt; после простоя возможен холодный старт.
+
 Образ собирает сервер и интерфейс, оставляет только production-зависимости и автоматически
 запускает Node.js от непривилегированного пользователя. API и интерфейс доступны на одном порту.
 
@@ -309,7 +313,7 @@ OAuth-сессию хранит Codex вне репозитория; не коп
 ### Проверка сценария после запуска
 
 ```bash
-DEPLOYMENT_URL=http://localhost:8080 mise run deployment:check
+DEPLOYMENT_URL=https://call-calendar-386-o6lw.onrender.com mise run deployment:check
 ```
 
 Для публичного сервиса подставьте его HTTPS-адрес. Проверка запускает Chromium,
