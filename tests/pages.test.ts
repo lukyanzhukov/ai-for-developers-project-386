@@ -8,25 +8,20 @@ function renderPage(pathname: string) {
   return renderToStaticMarkup(createElement(MantineProvider, {}, createElement(App, { pathname })));
 }
 
-test("home explains the booking rules and links to the booking page", () => {
+test("home explains the booking steps and links to booking", () => {
   const html = renderPage("/");
-
   expect(html).toMatch(/<a\b[^>]*href="\/booking"[^>]*>.*?Записаться.*?<\/a>/);
   expect(html).toContain("Без регистрации");
-  expect(html).toContain("одним владельцем календаря");
-  expect(html).toContain("название, описание и длительность");
+  expect(html).toContain("Выберите встречу");
+  expect(html).toContain("Назначьте время");
   expect(html).toContain("ближайшие 14 дней");
-  expect(html).toContain("сколько длится выбранный тип встречи");
-  expect(html).toContain("одно и то же время нельзя занять дважды");
-  expect(html).toContain("даже частично");
-  expect(html).toContain("предстоящие встречи всех типов");
+  expect(html).not.toContain("тип встречи");
 });
 
-test("booking loads meeting types and links home", () => {
+test("booking loads meetings and links home", () => {
   const html = renderPage("/booking");
-
-  expect(html).toContain("Выберите тип встречи");
-  expect(html).toContain("Загрузка типов встреч");
-  expect(html).toMatch(/<a\b[^>]*href="\/"[^>]*>.*?На главную.*?<\/a>/);
+  expect(html).toContain("Выберите встречу");
+  expect(html).toContain("Загрузка встреч");
+  expect(html).toMatch(/<a\b[^>]*href="\/"[^>]*aria-label="Календарь звонков — на главную"/);
   expect(html).not.toContain("<form");
 });

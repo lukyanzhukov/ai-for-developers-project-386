@@ -27,8 +27,8 @@ export function UpcomingBookings() {
   }, [attempt]);
 
   return (
-    <Stack className="hero" gap="lg">
-      <Title order={1}>Предстоящие встречи</Title>
+    <Stack className="upcoming-page" gap="lg">
+      <Title order={2}>Предстоящие встречи</Title>
       <Text>Время встреч: Asia/Novokuznetsk</Text>
       <Button
         style={{ alignSelf: "flex-start" }}

@@ -2,7 +2,9 @@ import {
   Alert,
   Anchor,
   Button,
-  NativeSelect,
+  Group,
+  Paper,
+  Radio,
   Stack,
   Text,
   Textarea,
@@ -44,139 +46,177 @@ export function CreateMeetingType() {
   );
   if (created)
     return (
-      <Stack className="hero" gap="lg">
-        <Title order={1}>Тип встречи создан</Title>
-        <Text style={{ overflowWrap: "anywhere" }}>
-          {created.title} — {created.durationMinutes} мин
-        </Text>
-        <Anchor href={`/booking#meeting-type-${created.id}`}>
-          Открыть созданный тип в публичном списке
-        </Anchor>
-      </Stack>
+      <Paper className="form-card success-card" withBorder>
+        <Stack gap="lg">
+          <div className="success-icon" aria-hidden="true">
+            ✓
+          </div>
+          <Title order={1}>Встреча создана</Title>
+          <Text style={{ overflowWrap: "anywhere" }}>
+            {created.title} — {created.durationMinutes} мин
+          </Text>
+          <Anchor href={`/booking#meeting-type-${created.id}`}>
+            Посмотреть на странице записи
+          </Anchor>
+        </Stack>
+      </Paper>
     );
   return (
-    <Stack className="hero" gap="lg" maw={650}>
-      <Title order={1}>Новый тип встречи</Title>
-      <Text>Один владелец календаря. Вход не требуется.</Text>
-      {listError && (
-        <Alert color="yellow">Не удалось проверить совпадения названий. Создание доступно.</Alert>
-      )}
-      <Stack
-        component="form"
-        onSubmit={async (event) => {
-          event.preventDefault();
-          setSaving(true);
-          setErrors({});
-          setError("");
-          try {
-            const result = await createMeetingType({
-              body: {
-                title,
-                description,
-                durationMinutes: Number(duration === "custom" ? minutes : duration),
-                ...(id.trim() ? { id } : {}),
-              },
-              signal: AbortSignal.timeout(10000),
-            });
-            if (result.data) {
-              setCreated(result.data);
-            } else if (result.error?.code === "ID_ALREADY_EXISTS") {
-              setErrors({ id: result.error.message });
-            } else if (result.error?.code === "VALIDATION_ERROR") {
-              setErrors(
-                Object.fromEntries(
-                  (result.error.fields ?? []).map((field) => [field.field, field.message]),
-                ),
-              );
-              setError(result.error.message);
-            } else setError("Не удалось создать тип встречи. Попробуйте ещё раз.");
-          } catch {
-            setError("Не удалось создать тип встречи. Попробуйте ещё раз.");
-          } finally {
-            setSaving(false);
-          }
-        }}
-      >
-        <TextInput
-          label="Название"
-          required
-          value={title}
-          onChange={(event) => setTitle(event.currentTarget.value)}
-          error={errors.title}
-        />
-        {matches.length > 0 && (
-          <Alert color="yellow" component="output">
-            <Stack gap="xs">
-              <Text>Тип встречи с таким названием уже существует</Text>
-              {matches.map((item) => (
-                <Stack key={item.id} gap={0}>
-                  <Anchor
-                    href={`/booking#meeting-type-${item.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {item.title} — {item.durationMinutes} мин
-                  </Anchor>
-                  <Text style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
-                    {item.description}
-                  </Text>
-                </Stack>
-              ))}
-            </Stack>
-          </Alert>
+    <Paper className="form-card" withBorder>
+      <Stack gap="xl">
+        <header>
+          <Text className="eyebrow">Настройка встречи</Text>
+          <Title order={2}>Новая встреча</Title>
+          <Text c="dimmed" size="sm" mt="sm">
+            Расскажите, о чём поговорим и сколько времени понадобится.
+          </Text>
+        </header>
+        {listError && (
+          <Alert color="yellow">Не удалось проверить совпадения названий. Создание доступно.</Alert>
         )}
-        <Textarea
-          label="Описание"
-          maxLength={2000}
-          value={description}
-          onChange={(event) => setDescription(event.currentTarget.value)}
-          error={errors.description}
-        />
-        <NativeSelect
-          label="Длительность"
-          value={duration}
-          onChange={(event) => setDuration(event.currentTarget.value)}
-          data={[
-            ...[15, 30, 45, 60, 90, 120].map((value) => ({
-              value: String(value),
-              label: `${value} мин`,
-            })),
-            { value: "custom", label: "Другая длительность" },
-          ]}
-          error={errors.durationMinutes}
-        />
-        {duration === "custom" && (
+        <Stack
+          component="form"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            setSaving(true);
+            setErrors({});
+            setError("");
+            try {
+              const result = await createMeetingType({
+                body: {
+                  title,
+                  description,
+                  durationMinutes: Number(duration === "custom" ? minutes : duration),
+                  ...(id.trim() ? { id } : {}),
+                },
+                signal: AbortSignal.timeout(10000),
+              });
+              if (result.data) {
+                setCreated(result.data);
+              } else if (result.error?.code === "ID_ALREADY_EXISTS") {
+                setErrors({ id: result.error.message });
+              } else if (result.error?.code === "VALIDATION_ERROR") {
+                setErrors(
+                  Object.fromEntries(
+                    (result.error.fields ?? []).map((field) => [field.field, field.message]),
+                  ),
+                );
+                setError(result.error.message);
+              } else setError("Не удалось создать встречу. Попробуйте ещё раз.");
+            } catch {
+              setError("Не удалось создать встречу. Попробуйте ещё раз.");
+            } finally {
+              setSaving(false);
+            }
+          }}
+        >
           <TextInput
-            label="Минуты"
-            type="number"
+            label="Название"
+            placeholder="Например, знакомство или консультация"
+            maxLength={120}
             required
-            min={1}
-            max={1440}
-            step={1}
-            value={minutes}
-            onChange={(event) => setMinutes(event.currentTarget.value)}
-            error={errors.durationMinutes}
+            value={title}
+            onChange={(event) => setTitle(event.currentTarget.value)}
+            error={errors.title}
           />
-        )}
-        <TextInput
-          label="ID"
-          description="Необязательно. Оставьте пустым — система назначит ID автоматически"
-          value={id}
-          onChange={(event) => setId(event.currentTarget.value)}
-          error={errors.id}
-        />
-        {error && (
-          <Alert color="red" role="alert">
-            {error}
-          </Alert>
-        )}
-        <Button type="submit" loading={saving} color="teal">
-          Создать тип встречи
-        </Button>
+          {matches.length > 0 && (
+            <Alert color="yellow" component="output">
+              <Stack gap="xs">
+                <Text>Встреча с таким названием уже существует</Text>
+                {matches.map((item) => (
+                  <Stack key={item.id} gap={0}>
+                    <Anchor
+                      href={`/booking#meeting-type-${item.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {item.title} — {item.durationMinutes} мин
+                    </Anchor>
+                    <Text style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                      {item.description}
+                    </Text>
+                  </Stack>
+                ))}
+              </Stack>
+            </Alert>
+          )}
+          <Textarea
+            label="Описание"
+            placeholder="Что стоит знать гостю перед встречей?"
+            minRows={3}
+            maxLength={2000}
+            value={description}
+            onChange={(event) => setDescription(event.currentTarget.value)}
+            error={errors.description}
+          />
+          <Radio.Group
+            label="Длительность"
+            value={duration}
+            onChange={(value) => {
+              if (value === "custom") setMinutes(duration === "custom" ? minutes : duration);
+              setDuration(value);
+            }}
+            error={errors.durationMinutes}
+          >
+            <div className="duration-grid">
+              {[15, 30, 45, 60, 90, 120].map((value) => (
+                <Radio.Card key={value} value={String(value)} className="duration-choice">
+                  <Radio.Indicator size={16} />
+                  <Text fw={600} size="sm">
+                    {value} мин
+                  </Text>
+                </Radio.Card>
+              ))}
+              <Radio.Card value="custom" className="duration-choice duration-custom">
+                <Radio.Indicator size={16} />
+                <Text fw={600} size="sm">
+                  Другая длительность
+                </Text>
+                <Text size="xs" c="dimmed">
+                  Указать минуты
+                </Text>
+              </Radio.Card>
+            </div>
+          </Radio.Group>
+          {duration === "custom" && (
+            <TextInput
+              label="Минуты"
+              type="number"
+              required
+              min={1}
+              max={1440}
+              step={1}
+              value={minutes}
+              onChange={(event) => setMinutes(event.currentTarget.value)}
+              error={errors.durationMinutes}
+            />
+          )}
+          <TextInput
+            label="ID"
+            placeholder="Автоматически"
+            description="Необязательно. Оставьте пустым — система назначит ID автоматически"
+            value={id}
+            onChange={(event) => setId(event.currentTarget.value)}
+            error={errors.id}
+          />
+          {error && (
+            <Alert color="red" role="alert">
+              {error}
+            </Alert>
+          )}
+          <Group justify="space-between" className="form-actions">
+            <Text c="dimmed" size="xs">
+              Сразу появится на странице записи
+            </Text>
+            <Button type="submit" loading={saving}>
+              Создать встречу
+            </Button>
+          </Group>
+        </Stack>
+        <Anchor href="/booking" target="_blank" rel="noopener noreferrer">
+          Открыть страницу записи ↗
+        </Anchor>
       </Stack>
-      <Anchor href="/booking" target="_blank" rel="noopener noreferrer">
-        Публичный список типов встреч
-      </Anchor>
-    </Stack>
+    </Paper>
   );
 }

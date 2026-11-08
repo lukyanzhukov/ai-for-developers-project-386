@@ -48,8 +48,8 @@ test("guest reads the real API list on desktop and mobile without interpreting d
         );
         await page.goto(`${server.address}/booking`);
         expect(await (await response).json()).toEqual({ items: [first, second, third] });
-        await page.getByRole("heading", { name: "Выберите тип встречи", exact: true }).waitFor();
-        const items = page.getByRole("list", { name: "Типы встреч" }).getByRole("listitem");
+        await page.getByRole("heading", { name: "Выберите встречу", exact: true }).waitFor();
+        const items = page.getByRole("list", { name: "Встречи" }).getByRole("listitem");
         expect(await items.count()).toBe(3);
         expect(await items.nth(0).getByRole("heading").textContent()).toBe(sameTitle);
         expect(await items.nth(0).textContent()).toContain("17 мин");
@@ -97,14 +97,17 @@ test("guest sees loading, a request error, and can retry against the real server
     );
     try {
       await page.goto(`${server.address}/booking`);
-      await page.getByRole("status").getByText("Загрузка типов встреч…", { exact: true }).waitFor();
+      await page.getByRole("status").getByText("Загрузка встреч…", { exact: true }).waitFor();
       failRequest!();
       await page
         .getByRole("alert")
-        .getByText("Не удалось загрузить типы встреч. Попробуйте ещё раз.", { exact: true })
+        .getByText("Не удалось загрузить встречи. Попробуйте ещё раз.", { exact: true })
         .waitFor();
       await page.getByRole("button", { name: "Повторить", exact: true }).click();
-      await page.getByRole("status").getByText("Типов встреч пока нет.", { exact: true }).waitFor();
+      await page
+        .getByRole("status")
+        .getByText("Встреч для записи пока нет.", { exact: true })
+        .waitFor();
       expect(await page.getByRole("alert").count()).toBe(0);
     } finally {
       failRequest!();

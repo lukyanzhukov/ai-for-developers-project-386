@@ -66,9 +66,10 @@ test("guest recovers from slot conflict without losing data and confirms another
     expect(await page.getByLabel("Заметка", { exact: true }).inputValue()).toBe("Обсудим проект");
     await page.getByRole("button", { name: "Подтвердить запись", exact: true }).click();
     await page.getByRole("heading", { name: "Запись подтверждена", exact: true }).waitFor();
-    expect(await page.getByRole("status").textContent()).toContain(
-      "Знакомство, 2026-11-09, 09:30–10:00 · Asia/Novokuznetsk",
-    );
+    const receipt = await page.getByRole("region", { name: "Детали записи" }).textContent();
+    expect(receipt).toContain("9 ноября 2026");
+    expect(receipt).toContain("09:30–10:00");
+    expect(receipt).toContain("Asia/Novokuznetsk");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       390,
     );

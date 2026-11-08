@@ -20,25 +20,28 @@ try {
   const title = `Проверка деплоя ${randomUUID()}`;
   await page.goto(`${baseUrl}/admin`);
   await page.getByLabel(/^Название/).fill(title);
-  await page.getByRole("button", { name: "Создать тип встречи", exact: true }).click();
-  await page
-    .getByRole("link", { name: "Открыть созданный тип в публичном списке", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Создать встречу", exact: true }).click();
+  await page.getByRole("link", { name: "Посмотреть на странице записи", exact: true }).click();
   await page
     .getByRole("listitem")
     .filter({ hasText: title })
     .getByRole("link", { name: "Выбрать время", exact: true })
     .click();
-  // Try each date: today's working hours may already be over.
-  const days = page.getByRole("button", { name: /^\d{4}-\d{2}-\d{2}$/ });
+  const days = page.getByRole("button", { name: /^\d{4}-\d{2}-\d{2}$/, disabled: false });
   await days.first().waitFor();
   const slots = page.getByRole("button", { name: /^\d{2}:\d{2}–\d{2}:\d{2}$/ });
-  for (let index = 0; index < (await days.count()); index++) {
-    await days.nth(index).click();
+  for (let month = 0; month < 2; month++) {
+    for (let index = 0; index < (await days.count()); index++) {
+      await days.nth(index).click();
+      if (await slots.count()) break;
+    }
     if (await slots.count()) break;
+    const next = page.getByRole("button", { name: "Следующий месяц", exact: true });
+    if (await next.isDisabled()) break;
+    await next.click();
   }
   assert((await slots.count()) > 0, "No free slot in the booking window");
-  const dateName = await page.getByRole("button", { pressed: true }).textContent();
+  const dateName = await page.getByRole("button", { pressed: true }).getAttribute("aria-label");
   const slotName = await slots.first().textContent();
   await slots.first().click();
   await page.getByRole("button", { name: "Продолжить", exact: true }).click();
@@ -46,7 +49,11 @@ try {
   const other = await browser.newPage();
   other.setDefaultTimeout(30000);
   await other.goto(page.url());
-  await other.getByRole("button", { name: dateName.trim(), exact: true }).click();
+  const sameDay = other.getByRole("button", { name: dateName, exact: true });
+  await other.getByRole("button", { name: "Следующий месяц", exact: true }).waitFor();
+  if (!(await sameDay.count()) || (await sameDay.isDisabled()))
+    await other.getByRole("button", { name: "Следующий месяц", exact: true }).click();
+  await sameDay.click();
   await other.getByRole("button", { name: slotName.trim(), exact: true }).click();
   await other.getByRole("button", { name: "Продолжить", exact: true }).click();
   for (const guest of [page, other]) {

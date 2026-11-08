@@ -1,4 +1,4 @@
-import { Alert, Button, Paper, Stack, Text, Title } from "@mantine/core";
+import { Alert, Badge, Button, Group, Paper, Stack, Text, Title } from "@mantine/core";
 import { useEffect, useState } from "react";
 import { listMeetingTypes } from "../generated/api/sdk.gen.ts";
 import type { MeetingType } from "../generated/api/types.gen.ts";
@@ -24,14 +24,25 @@ export function MeetingTypes() {
   }, [attempt]);
 
   return (
-    <Stack className="hero" gap="lg">
-      <Title order={1}>Выберите тип встречи</Title>
+    <Stack className="meeting-page" gap="xl">
+      <header className="page-heading">
+        <div className="owner-avatar" aria-hidden="true">
+          К
+        </div>
+        <Text className="eyebrow" mt="lg">
+          Календарь звонков
+        </Text>
+        <Title order={1}>Выберите встречу</Title>
+        <Text c="dimmed" mt="sm">
+          Найдём время для хорошего разговора. С чего начнём?
+        </Text>
+      </header>
       {state.status === "loading" ? (
-        <Text component="output">Загрузка типов встреч…</Text>
+        <Text component="output">Загрузка встреч…</Text>
       ) : state.status === "error" ? (
         <Alert role="alert" color="red">
           <Stack align="flex-start">
-            <Text>Не удалось загрузить типы встреч. Попробуйте ещё раз.</Text>
+            <Text>Не удалось загрузить встречи. Попробуйте ещё раз.</Text>
             <Button
               onClick={() => {
                 setState({ status: "loading" });
@@ -43,31 +54,46 @@ export function MeetingTypes() {
           </Stack>
         </Alert>
       ) : state.items.length === 0 ? (
-        <Text component="output">Типов встреч пока нет.</Text>
+        <Text component="output">Встреч для записи пока нет.</Text>
       ) : (
-        <Stack component="ul" aria-label="Типы встреч" p={0} m={0} style={{ listStyle: "none" }}>
+        <Stack
+          component="ul"
+          aria-label="Встречи"
+          className="meeting-list"
+          p={0}
+          m={0}
+          style={{ listStyle: "none" }}
+        >
           {state.items.map((item) => (
             <Paper
               component="li"
               key={item.id}
               id={`meeting-type-${item.id}`}
-              p="lg"
+              p={28}
               radius="md"
               withBorder
               style={{ overflowWrap: "anywhere" }}
             >
-              <Stack gap="sm">
-                <Title order={2} size="h3">
-                  {item.title}
-                </Title>
+              <Stack gap="md" h="100%">
+                <Group justify="space-between" align="flex-start" wrap="nowrap">
+                  <Title order={2} size="h3">
+                    {item.title}
+                  </Title>
+                  <Badge variant="light" color="gray" style={{ flexShrink: 0 }}>
+                    {item.durationMinutes} мин
+                  </Badge>
+                </Group>
                 {item.description && (
-                  <Text style={{ whiteSpace: "pre-wrap" }}>{item.description}</Text>
+                  <Text c="dimmed" size="sm" style={{ whiteSpace: "pre-wrap" }}>
+                    {item.description}
+                  </Text>
                 )}
-                <Text>{item.durationMinutes} мин</Text>
                 <Button
                   component="a"
                   href={`/booking?type=${encodeURIComponent(item.id)}`}
-                  style={{ alignSelf: "flex-start" }}
+                  variant="subtle"
+                  className="meeting-link"
+                  rightSection={<span aria-hidden="true">→</span>}
                 >
                   Выбрать время
                 </Button>
