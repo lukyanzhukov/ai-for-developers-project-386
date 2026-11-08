@@ -161,14 +161,12 @@ export function CreateMeetingType() {
             <div className="duration-grid">
               {[15, 30, 45, 60, 90, 120].map((value) => (
                 <Radio.Card key={value} value={String(value)} className="duration-choice">
-                  <Radio.Indicator size={16} />
                   <Text fw={600} size="sm">
                     {value} мин
                   </Text>
                 </Radio.Card>
               ))}
               <Radio.Card value="custom" className="duration-choice duration-custom">
-                <Radio.Indicator size={16} />
                 <Text fw={600} size="sm">
                   Другая длительность
                 </Text>
