@@ -24,7 +24,8 @@ test("guest selects type, date and slot on desktop and mobile, with direct entry
       page.setDefaultNavigationTimeout(3000);
       try {
         await page.goto(`${server.address}/booking`);
-        await page.getByRole("link", { name: "Выбрать время" }).click();
+        await page.getByRole("radio", { name: "Знакомство, 17 мин", exact: true }).click();
+        await page.getByRole("button", { name: "Дальше", exact: true }).click();
         await page.waitForURL(`${server.address}/booking?type=intro`);
         await page.getByRole("heading", { name: "Выберите дату и время" }).waitFor();
         await page.getByRole("button", { name: "2026-11-14", exact: true }).click();
@@ -41,11 +42,11 @@ test("guest selects type, date and slot on desktop and mobile, with direct entry
         await page.reload();
         await page.getByRole("heading", { name: "Выберите дату и время" }).waitFor();
         await page.getByRole("button", { name: "2026-11-09", exact: true }).waitFor();
-        await page.getByRole("link", { name: "Выбрать другую встречу", exact: true }).click();
+        await page.getByRole("button", { name: "Назад к встречам", exact: true }).click();
         await page.getByRole("heading", { name: "Выберите встречу", exact: true }).waitFor();
         await page.goto(`${server.address}/booking?type=missing`);
         await page.getByRole("alert").getByText("Встреча не найдена.", { exact: true }).waitFor();
-        await page.getByRole("link", { name: "Выбрать другую встречу", exact: true }).waitFor();
+        await page.getByRole("button", { name: "Назад к встречам", exact: true }).waitFor();
       } finally {
         await page.close();
       }
@@ -122,9 +123,7 @@ test("month calendar keeps the 14-day window across a month boundary and clears 
     );
     await page.getByRole("button", { name: "2026-11-30", exact: true }).click();
     await page.getByRole("button", { name: "09:00–09:17", exact: true }).click();
-    expect(await page.getByRole("button", { name: "Продолжить", exact: true }).isEnabled()).toBe(
-      true,
-    );
+    expect(await page.getByRole("button", { name: "Дальше", exact: true }).isEnabled()).toBe(true);
     await next.click();
     expect(await next.isDisabled()).toBe(true);
     expect(await page.getByRole("button", { name: "2026-12-11", exact: true }).isDisabled()).toBe(
@@ -132,9 +131,7 @@ test("month calendar keeps the 14-day window across a month boundary and clears 
     );
     await page.getByRole("button", { name: "2026-12-01", exact: true }).focus();
     await page.keyboard.press("Enter");
-    expect(await page.getByRole("button", { name: "Продолжить", exact: true }).isDisabled()).toBe(
-      true,
-    );
+    expect(await page.getByRole("button", { name: "Дальше", exact: true }).isDisabled()).toBe(true);
     await page.getByRole("button", { name: "09:00–09:17", exact: true }).click();
     expect(await page.getByRole("status").textContent()).toContain("2026-12-01, 09:00–09:17");
     await previous.click();

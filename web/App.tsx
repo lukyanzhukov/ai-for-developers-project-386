@@ -14,7 +14,6 @@ import "./app.css";
 import { CreateMeetingType } from "./CreateMeetingType.tsx";
 import { Calendar } from "./Calendar.tsx";
 import { UpcomingBookings } from "./UpcomingBookings.tsx";
-import { MeetingTypes } from "./MeetingTypes.tsx";
 
 export function App({ pathname }: { pathname: string }) {
   const params =
@@ -81,11 +80,7 @@ export function App({ pathname }: { pathname: string }) {
             </div>
           </div>
         ) : isBooking ? (
-          meetingTypeId !== null ? (
-            <Calendar id={meetingTypeId} />
-          ) : (
-            <MeetingTypes />
-          )
+          <Calendar id={meetingTypeId} />
         ) : (
           <>
             <section className="home-hero">
@@ -191,9 +186,6 @@ export function App({ pathname }: { pathname: string }) {
       <Box component="footer" className="footer">
         <Text size="xs" c="dimmed">
           Календарь звонков
-        </Text>
-        <Text size="xs" c="dimmed">
-          Меньше суеты. Больше общения.
         </Text>
       </Box>
     </Container>

@@ -21,12 +21,12 @@ test("guest recovers from slot conflict without losing data and confirms another
     page.setDefaultNavigationTimeout(3000);
     await page.goto(`${server.address}/booking?type=intro`);
     await page.getByRole("button", { name: "09:00–09:30", exact: true }).click();
-    await page.getByRole("button", { name: "Продолжить", exact: true }).click();
+    await page.getByRole("button", { name: "Дальше", exact: true }).click();
     await page.getByLabel(/^Имя/).fill("Гость");
     await page.getByLabel(/^Email/).fill("guest@example.com");
     await page.getByLabel("Заметка", { exact: true }).fill("Обсудим проект");
     await page.getByRole("button", { name: "Назад к календарю" }).click();
-    await page.getByRole("button", { name: "Продолжить", exact: true }).click();
+    await page.getByRole("button", { name: "Дальше", exact: true }).click();
     expect(await page.getByLabel(/^Имя/).inputValue()).toBe("Гость");
     await createBooking({
       baseUrl: server.address,
@@ -61,7 +61,7 @@ test("guest recovers from slot conflict without losing data and confirms another
     await page.getByRole("button", { name: "09:30–10:00", exact: true }).waitFor();
     expect(await page.getByRole("button", { name: "09:00–09:30", exact: true }).count()).toBe(0);
     await page.getByRole("button", { name: "09:30–10:00", exact: true }).click();
-    await page.getByRole("button", { name: "Продолжить", exact: true }).click();
+    await page.getByRole("button", { name: "Дальше", exact: true }).click();
     expect(await page.getByLabel(/^Email/).inputValue()).toBe("guest@example.com");
     expect(await page.getByLabel("Заметка", { exact: true }).inputValue()).toBe("Обсудим проект");
     await page.getByRole("button", { name: "Подтвердить запись", exact: true }).click();
@@ -116,7 +116,7 @@ test("unknown network result retries the same payload and key, while edits use a
     });
     await page.goto(`${server.address}/booking?type=intro`);
     await page.getByRole("button", { name: "09:00–09:30", exact: true }).click();
-    await page.getByRole("button", { name: "Продолжить", exact: true }).click();
+    await page.getByRole("button", { name: "Дальше", exact: true }).click();
     await page.getByLabel(/^Имя/).fill("Гость");
     await page.getByLabel(/^Email/).fill("guest@example.com");
     const submit = page.getByRole("button", { name: "Подтвердить запись", exact: true });
@@ -135,7 +135,7 @@ test("unknown network result retries the same payload and key, while edits use a
 
     await page.goto(`${server.address}/booking?type=intro`);
     await page.getByRole("button", { name: "09:30–10:00", exact: true }).click();
-    await page.getByRole("button", { name: "Продолжить", exact: true }).click();
+    await page.getByRole("button", { name: "Дальше", exact: true }).click();
     await page.getByLabel(/^Имя/).fill("Гость");
     await page.getByLabel(/^Email/).fill("guest@example.com");
     await page.unroute("**/api/bookings");
@@ -184,7 +184,7 @@ test("long valid guest and meeting names fit mobile calendar, form and confirmat
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       390,
     );
-    await page.getByRole("button", { name: "Продолжить", exact: true }).click();
+    await page.getByRole("button", { name: "Дальше", exact: true }).click();
     await page.getByLabel(/^Имя/).fill("Г".repeat(120));
     await page.getByLabel(/^Email/).fill(`${"a".repeat(60)}@example.com`);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(

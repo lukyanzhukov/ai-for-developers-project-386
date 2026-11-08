@@ -650,9 +650,7 @@ h3 {
   .meeting-list {
     grid-template-columns: 1fr;
   }
-  .meeting-list > li {
-    padding: 22px;
-  }
+
   .page-heading h1,
   .booking-heading h1 {
     font-size: 27px;
@@ -798,4 +796,174 @@ h3 {
   .duration-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+.booking-wizard {
+  padding-top: 36px;
+}
+.wizard-progress {
+  width: 100%;
+  max-width: 850px;
+  margin-inline: auto;
+}
+.booking-wizard .booking-page,
+.booking-wizard .meeting-page {
+  margin-top: 0;
+}
+.wizard-progress .mantine-Stepper-content {
+  display: none;
+}
+.meeting-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.meeting-list > li {
+  display: flex;
+}
+.meeting-choice {
+  padding: 28px;
+  width: 100%;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  overflow-wrap: anywhere;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.meeting-choice:hover {
+  border-color: #aea79b;
+}
+.meeting-choice[data-checked] {
+  border-color: #302d27;
+  background: #f0ede5;
+  box-shadow: 0 0 0 1px #302d27;
+}
+.meeting-choice-state {
+  color: #716b5e;
+}
+.meeting-choice[data-checked] .meeting-choice-state {
+  color: #292722;
+}
+.wizard-actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 24px 28px;
+  border-top: 1px solid var(--line);
+}
+.booking-wizard .mantine-Button-root {
+  min-height: 46px;
+}
+.time-slots .mantine-Button-root[aria-pressed="true"] {
+  background: #292722;
+  color: #fff;
+  border: 2px solid #292722;
+  box-shadow: 0 0 0 2px #d8c9a5;
+}
+.calendar-day[aria-pressed="true"] {
+  border: 2px solid #b4965f;
+  box-shadow: 0 0 0 1px #292722;
+  font-weight: 700;
+}
+.owner-calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  border-color: var(--line);
+  border-radius: 12px;
+}
+.owner-agenda {
+  min-width: 0;
+  padding: 28px 22px;
+  border-left: 1px solid var(--line);
+}
+.owner-agenda > h3 {
+  text-transform: capitalize;
+}
+.owner-agenda li {
+  padding: 16px;
+}
+.owner-agenda h2 {
+  font-size: 18px;
+}
+.owner-agenda li p {
+  font-size: 13px;
+}
+@media (max-width: 700px) {
+  .booking-wizard {
+    padding-top: 28px;
+  }
+  .wizard-progress .mantine-Stepper-step {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .wizard-progress .mantine-Stepper-stepBody {
+    margin: 0;
+    text-align: center;
+  }
+  .wizard-progress .mantine-Stepper-stepLabel {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+  .wizard-progress .mantine-Stepper-separator {
+    margin-inline: 6px;
+    margin-bottom: 24px;
+  }
+  .meeting-choice {
+    padding: 22px;
+  }
+  .wizard-actions {
+    padding: 20px;
+    gap: 10px;
+  }
+  .wizard-actions .mantine-Button-root {
+    font-size: 13px;
+    padding-inline: 8px;
+  }
+  .owner-calendar-layout {
+    grid-template-columns: 1fr;
+  }
+  .owner-agenda {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding: 22px 20px;
+  }
+}
+.booking-wizard h1:focus,
+.confirmation-card h1:focus {
+  outline: none;
+}
+.owner-calendar-layout .month-calendar {
+  width: 100%;
+  max-width: 420px;
+  justify-self: center;
+}
+@media (max-width: 1100px) {
+  .owner-calendar-layout {
+    grid-template-columns: 1fr;
+  }
+  .owner-agenda {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+}
+.booking-wizard {
+  max-width: 1050px;
+  margin-inline: auto;
+}
+.booking-wizard .wizard-progress,
+.booking-wizard .meeting-page,
+.booking-wizard .booking-panel-form {
+  width: 100%;
+  max-width: none;
+}
+.booking-wizard .mantine-Button-label > span[aria-hidden] {
+  margin-left: 8px;
+}
+.owner-agenda > h3 {
+  text-transform: none;
+}
+.owner-agenda > h3::first-letter {
+  text-transform: uppercase;
 }

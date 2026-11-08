@@ -22,11 +22,8 @@ try {
   await page.getByLabel(/^Название/).fill(title);
   await page.getByRole("button", { name: "Создать встречу", exact: true }).click();
   await page.getByRole("link", { name: "Посмотреть на странице записи", exact: true }).click();
-  await page
-    .getByRole("listitem")
-    .filter({ hasText: title })
-    .getByRole("link", { name: "Выбрать время", exact: true })
-    .click();
+  await page.getByRole("listitem").filter({ hasText: title }).getByRole("radio").click();
+  await page.getByRole("button", { name: "Дальше", exact: true }).click();
   const days = page.getByRole("button", { name: /^\d{4}-\d{2}-\d{2}$/, disabled: false });
   await days.first().waitFor();
   const slots = page.getByRole("button", { name: /^\d{2}:\d{2}–\d{2}:\d{2}$/ });
@@ -44,7 +41,7 @@ try {
   const dateName = await page.getByRole("button", { pressed: true }).getAttribute("aria-label");
   const slotName = await slots.first().textContent();
   await slots.first().click();
-  await page.getByRole("button", { name: "Продолжить", exact: true }).click();
+  await page.getByRole("button", { name: "Дальше", exact: true }).click();
 
   const other = await browser.newPage();
   other.setDefaultTimeout(30000);
@@ -55,7 +52,7 @@ try {
     await other.getByRole("button", { name: "Следующий месяц", exact: true }).click();
   await sameDay.click();
   await other.getByRole("button", { name: slotName.trim(), exact: true }).click();
-  await other.getByRole("button", { name: "Продолжить", exact: true }).click();
+  await other.getByRole("button", { name: "Дальше", exact: true }).click();
   for (const guest of [page, other]) {
     await guest.getByLabel(/^Имя/).fill("Тестовый гость");
     await guest.getByLabel(/^Email/).fill("deployment@example.com");
@@ -66,10 +63,16 @@ try {
   await other.getByRole("alert").getByText("Это время уже заняли. Выберите другой слот").waitFor();
   await page.goto(`${baseUrl}/admin?view=bookings`);
   const list = page.getByRole("list", { name: "Предстоящие встречи", exact: true });
-  await list.getByText(title, { exact: true }).waitFor();
-  assert.equal(await list.getByText(title, { exact: true }).count(), 1);
-  await page.reload();
-  await list.getByText(title, { exact: true }).waitFor();
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt) await page.reload();
+    const nextMonth = page.getByRole("button", { name: "Следующий месяц", exact: true });
+    await nextMonth.waitFor();
+    const ownerDay = page.getByRole("button", { name: dateName, exact: true });
+    if (!(await ownerDay.count()) || (await ownerDay.isDisabled())) await nextMonth.click();
+    await ownerDay.click();
+    await list.getByText(title, { exact: true }).waitFor();
+    assert.equal(await list.getByText(title, { exact: true }).count(), 1);
+  }
   console.log(
     "Passed: health, owner creates type, guest books, duplicate rejected, owner sees booking",
   );

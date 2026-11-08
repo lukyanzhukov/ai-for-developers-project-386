@@ -1,18 +1,23 @@
 import { ActionIcon, Group, Text } from "@mantine/core";
 import { useState } from "react";
-import type { Availability } from "../generated/api/types.gen.ts";
 
 export function MonthCalendar({
-  availability,
+  start,
+  end,
+  markedDates,
+  legend,
   date,
   onChange,
 }: {
-  availability: Availability;
+  start: string;
+  end: string;
+  markedDates: string[];
+  legend: string;
   date: string;
   onChange: (date: string) => void;
 }) {
-  const firstMonth = availability.windowStart.slice(0, 7);
-  const lastMonth = availability.windowEnd.slice(0, 7);
+  const firstMonth = start.slice(0, 7);
+  const lastMonth = end.slice(0, 7);
   const [viewedMonth, setViewedMonth] = useState(date.slice(0, 7));
   const month = viewedMonth < firstMonth || viewedMonth > lastMonth ? firstMonth : viewedMonth;
   const first = new Date(`${month}-01T12:00:00Z`);
@@ -65,7 +70,6 @@ export function MonthCalendar({
           current.setUTCDate(index - offset + 1);
           const iso = current.toISOString().slice(0, 10);
           const inMonth = iso.slice(0, 7) === month;
-          const day = availability.days.find((item) => item.date === iso);
           return (
             <button
               type="button"
@@ -73,9 +77,9 @@ export function MonthCalendar({
               className="calendar-day"
               aria-label={iso}
               aria-pressed={date === iso}
-              disabled={!inMonth || !day}
+              disabled={!inMonth || iso < start || iso > end}
               data-outside={!inMonth || undefined}
-              data-available={Boolean(day?.slots.length) || undefined}
+              data-available={markedDates.includes(iso) || undefined}
               onClick={() => onChange(iso)}
             >
               {current.getUTCDate()}
@@ -85,7 +89,7 @@ export function MonthCalendar({
         })}
       </fieldset>
       <Text size="xs" c="dimmed" mt="lg">
-        <span className="availability-dot" /> Есть свободное время
+        <span className="availability-dot" /> {legend}
       </Text>
     </section>
   );

@@ -18,9 +18,10 @@ for (const viewport of [
       await page.getByLabel(/^Название/).fill("Обсуждение проекта");
       await page.getByRole("button", { name: "Создать встречу", exact: true }).click();
       await page.getByRole("link", { name: "Посмотреть на странице записи", exact: true }).click();
-      await page.getByRole("link", { name: "Выбрать время", exact: true }).click();
+      await page.getByRole("radio", { name: "Обсуждение проекта, 30 мин", exact: true }).click();
+      await page.getByRole("button", { name: "Дальше", exact: true }).click();
       await page.getByRole("button", { name: "09:00–09:30", exact: true }).click();
-      await page.getByRole("button", { name: "Продолжить", exact: true }).click();
+      await page.getByRole("button", { name: "Дальше", exact: true }).click();
       await page.getByLabel(/^Имя/).fill("Анна");
       const email = `${"a".repeat(60)}@example.com`;
       await page.getByLabel(/^Email/).fill(email);
@@ -136,3 +137,79 @@ test("owner retries first load, keeps stale meetings after refresh failure, and 
     }
   }
 });
+
+for (const width of [1280, 390]) {
+  test(`owner calendar groups bookings by date and reaches distant months at ${width}px`, async () => {
+    const base = {
+      meetingTypeId: "intro",
+      durationMinutes: 30,
+      guestName: "Гость",
+      guestEmail: "guest@example.com",
+      note: "",
+      createdAt: "2026-11-01T00:00:00Z",
+    };
+    const server = await startServer([], {
+      now: ["2026-11-09T01:00:00Z"],
+      bookings: [
+        {
+          ...base,
+          id: "00000000-0000-4000-8000-000000000001",
+          meetingTypeTitle: "Сегодня",
+          startsAt: "2026-11-09T02:00:00Z",
+          endsAt: "2026-11-09T02:30:00Z",
+        },
+        {
+          ...base,
+          id: "00000000-0000-4000-8000-000000000002",
+          meetingTypeTitle: "Завтра",
+          startsAt: "2026-11-10T02:00:00Z",
+          endsAt: "2026-11-10T02:30:00Z",
+        },
+        {
+          ...base,
+          id: "00000000-0000-4000-8000-000000000003",
+          meetingTypeTitle: "В январе",
+          startsAt: "2027-01-04T02:00:00Z",
+          endsAt: "2027-01-04T02:30:00Z",
+        },
+      ],
+    });
+    let browser: Browser | undefined;
+    try {
+      browser = await chromium.launch({ timeout: 5000 });
+      const page = await browser.newPage({ viewport: { width, height: 900 } });
+      page.setDefaultTimeout(3000);
+      await page.goto(`${server.address}/admin?view=bookings`);
+      const list = page.getByRole("list", { name: "Предстоящие встречи", exact: true });
+      await list.getByText("Сегодня", { exact: true }).waitFor();
+      expect(await list.getByRole("listitem").count()).toBe(1);
+      await page.getByRole("button", { name: "2026-11-11", exact: true }).click();
+      await page.getByText("На этот день встреч нет", { exact: true }).waitFor();
+      expect(await list.count()).toBe(0);
+      await page.getByRole("button", { name: "2026-11-10", exact: true }).click();
+      await list.getByText("Завтра", { exact: true }).waitFor();
+      const next = page.getByRole("button", { name: "Следующий месяц", exact: true });
+      await next.click();
+      await next.click();
+      await page.getByRole("button", { name: "2027-01-04", exact: true }).click();
+      await list.getByText("В январе", { exact: true }).waitFor();
+      expect(await next.isDisabled()).toBe(true);
+      await page.getByRole("button", { name: "Обновить", exact: true }).click();
+      await list.getByText("В январе", { exact: true }).waitFor();
+      expect(
+        await page
+          .getByRole("button", { name: "2027-01-04", exact: true })
+          .getAttribute("aria-pressed"),
+      ).toBe("true");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        width,
+      );
+    } finally {
+      try {
+        await browser?.close();
+      } finally {
+        await server.close();
+      }
+    }
+  });
+}
