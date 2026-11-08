@@ -58,7 +58,7 @@ mise run fix          # автоисправления линтера и фор�
 
 ### Issue tracker
 
-Задачи и спецификации ведутся в GitHub Issues репозитория `lukyanzhukov/ai-for-developers-project-386`. See `docs/agents/issue-tracker.md`.
+Перед подготовкой спецификаций, публикацией задач и реализацией читайте `docs/agents/issue-tracker.md`: роли артефактов, границы этапов и отчёты о проверках и приёмке. Трекер проекта — GitHub Issues `lukyanzhukov/ai-for-developers-project-386`.
 
 ### Triage labels
 
