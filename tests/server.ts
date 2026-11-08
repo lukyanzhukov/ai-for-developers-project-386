@@ -1,10 +1,18 @@
 import { fork } from "node:child_process";
 import { once } from "node:events";
-import type { MeetingType } from "../generated/api/types.gen.ts";
+import type { Booking, MeetingType } from "../generated/api/types.gen.ts";
 
-export async function startServer(meetingTypes: MeetingType[] = []) {
+export async function startServer(
+  meetingTypes: MeetingType[] = [],
+  options: { now?: string[]; bookings?: Booking[] } = {},
+) {
   const child = fork("tests/server-fixture.mjs", [], {
-    env: { ...process.env, NODE_ENV: "production", MEETING_TYPES: JSON.stringify(meetingTypes) },
+    env: {
+      ...process.env,
+      NODE_ENV: "production",
+      MEETING_TYPES: JSON.stringify(meetingTypes),
+      SERVER_OPTIONS: JSON.stringify(options),
+    },
     stdio: ["ignore", "pipe", "pipe", "ipc"],
   });
   let output = "";

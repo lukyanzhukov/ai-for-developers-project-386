@@ -5,9 +5,13 @@ import { fileURLToPath } from "node:url";
 import type { RouteHandlers } from "../generated/api/fastify.gen.ts";
 import { HealthSchema } from "../generated/api/schemas.gen.ts";
 import * as schemas from "../generated/api/schemas.gen.ts";
-import type { MeetingType } from "../generated/api/types.gen.ts";
+import type { Availability, Booking, MeetingType } from "../generated/api/types.gen.ts";
 
-export async function createApp({ meetingTypes = [] }: { meetingTypes?: MeetingType[] } = {}) {
+export async function createApp({
+  meetingTypes = [],
+  bookings = [],
+  now = () => new Date(),
+}: { meetingTypes?: MeetingType[]; bookings?: Booking[]; now?: () => Date } = {}) {
   const app = Fastify({
     logger: true,
     ajv: { customOptions: { coerceTypes: false, keywords: ["components"] } },
@@ -41,7 +45,10 @@ export async function createApp({ meetingTypes = [] }: { meetingTypes?: MeetingT
     request.log.error(error);
     return reply.code(500).send({ code: "INTERNAL_ERROR", message: "Внутренняя ошибка сервера" });
   });
-  const handlers: Pick<RouteHandlers, "getHealth" | "listMeetingTypes" | "createMeetingType"> = {
+  const handlers: Pick<
+    RouteHandlers,
+    "getHealth" | "listMeetingTypes" | "createMeetingType" | "getAvailability"
+  > = {
     listMeetingTypes: async (_request, reply) =>
       reply.code(200).send({
         items: meetingTypes.toSorted(
@@ -64,9 +71,62 @@ export async function createApp({ meetingTypes = [] }: { meetingTypes?: MeetingT
           message: "Этот ID уже занят. Укажите другой или оставьте поле пустым",
         });
       }
-      const item = { id, title, description, durationMinutes, createdAt: new Date().toISOString() };
+      const item = { id, title, description, durationMinutes, createdAt: now().toISOString() };
       meetingTypes.push(item);
       return reply.code(201).send(item);
+    },
+    getAvailability: async (request, reply) => {
+      const meetingType = meetingTypes.find((item) => item.id === request.params.id);
+      if (!meetingType)
+        return reply
+          .code(404)
+          .send({ code: "MEETING_TYPE_NOT_FOUND", message: "Тип встречи не найден" });
+      const serverNow = now();
+      const timeZone = "Asia/Novokuznetsk";
+      const today = new Intl.DateTimeFormat("en-CA", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(serverNow);
+      const days: Availability["days"][number][] = [];
+      for (let offset = 0; offset < 14; offset++) {
+        const day = new Date(`${today}T00:00:00Z`);
+        day.setUTCDate(day.getUTCDate() + offset);
+        const date = day.toISOString().slice(0, 10);
+        const slots: Availability["days"][number]["slots"] = [];
+        if (day.getUTCDay() !== 0 && day.getUTCDay() !== 6) {
+          const opening = Date.parse(`${date}T09:00:00+07:00`);
+          const closing = Date.parse(`${date}T18:00:00+07:00`);
+          for (
+            let start = opening;
+            start + meetingType.durationMinutes * 60000 <= closing;
+            start += 15 * 60000
+          ) {
+            const end = start + meetingType.durationMinutes * 60000;
+            if (
+              start > serverNow.getTime() &&
+              !bookings.some(
+                (booking) =>
+                  start < Date.parse(booking.endsAt) && end > Date.parse(booking.startsAt),
+              )
+            ) {
+              slots.push({
+                startsAt: new Date(start).toISOString(),
+                endsAt: new Date(end).toISOString(),
+              });
+            }
+          }
+        }
+        days.push({ date, slots });
+      }
+      return reply.code(200).send({
+        serverNow: serverNow.toISOString(),
+        timeZone,
+        windowStart: days[0].date,
+        windowEnd: days[13].date,
+        days: days as Availability["days"],
+      });
     },
     getHealth: async (_request, reply) => reply.code(200).send({ status: "ok" }),
   };
@@ -84,6 +144,21 @@ export async function createApp({ meetingTypes = [] }: { meetingTypes?: MeetingT
       },
     },
     handlers.listMeetingTypes,
+  );
+
+  app.get<{ Params: { id: string } }>(
+    "/api/meeting-types/:id/availability",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["id"],
+          properties: { id: { $ref: "contract#/components/schemas/MeetingTypeId" } },
+        },
+        response: { 200: { $ref: "contract#/components/schemas/Availability" } },
+      },
+    },
+    handlers.getAvailability,
   );
 
   app.post<{ Body: import("../generated/api/types.gen.ts").CreateMeetingType }>(

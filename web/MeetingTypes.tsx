@@ -65,6 +65,13 @@ export function MeetingTypes() {
                   <Text style={{ whiteSpace: "pre-wrap" }}>{item.description}</Text>
                 )}
                 <Text>{item.durationMinutes} мин</Text>
+                <Button
+                  component="a"
+                  href={`/booking?type=${encodeURIComponent(item.id)}`}
+                  style={{ alignSelf: "flex-start" }}
+                >
+                  Выбрать время
+                </Button>
               </Stack>
             </Paper>
           ))}
