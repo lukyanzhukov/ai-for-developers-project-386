@@ -1,22 +1,22 @@
 ---
 name: to-spec
-description: "Turn the current conversation into a spec and publish it to the project issue tracker: no interview, just synthesis of what you've already discussed."
+description: "Turn agreed product decisions and the current conversation into a specification draft for user review, before implementation tickets are published."
 disable-model-invocation: true
 ---
 
-This skill takes the current conversation context and codebase understanding and produces a spec. Do NOT interview the user; just synthesize what you already know.
+This skill produces a specification draft from agreed product decisions and codebase context. Synthesize what is already known; do not conduct a new product interview or invent answers to open questions.
 
-The issue tracker and triage label vocabulary should have been provided to you. If not, tell the user to run `/setup-matt-pocock-skills`.
+Read the project's tracker document's **Workflow and artifacts** section for artifact roles, stage boundaries, and progress/handoff reporting. In this repo it is [docs/agents/issue-tracker.md](../../../docs/agents/issue-tracker.md). If another repo has no configured tracker document, ask the user to run `/setup-matt-pocock-skills`.
 
 ## Process
 
-1. Explore the repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the spec, and respect any ADRs in the area you're touching.
+1. Read the conversation and any referenced decisions or source artifacts. Explore the repo if its current state is not already known. Use the domain glossary throughout the draft and respect relevant ADRs.
 
-2. Sketch out the seams at which you're going to test the feature. Existing seams should be preferred to new ones. Use the highest seam possible. If new seams are needed, propose them at the highest point you can. The fewer seams across the codebase, the better - the ideal number is one.
+2. Identify the agreed behavior, constraints, API requirements, and unresolved decisions. Link existing decision answers where useful. Mark any unresolved behavior explicitly; it prevents the draft being handed off as ready for implementation.
 
-Check with the user that these seams match their expectations.
+3. Describe the testing seams. Reuse ones the user has already approved. Propose any new seams as part of this draft for review, distinguishing automated checks from the user's acceptance scenario.
 
-3. Write the spec using the template below, then publish it to the project issue tracker. Apply the `ready-for-agent` triage label - no need for additional triage.
+4. Present the draft using the template below in the conversation, or update the draft location explicitly requested by the user. Ask for specification approval only if it has not already been given. Do not create a specification issue or apply a triage label at this stage. After approval, hand the draft to `/to-tickets` only if that next stage is authorized.
 
 <spec-template>
 
@@ -30,7 +30,7 @@ The solution to the problem, from the user's perspective.
 
 ## User Stories
 
-A LONG, numbered list of user stories. Each user story should be in the format of:
+A numbered list covering the agreed user behavior. Each user story should be in the format of:
 
 1. As an <actor>, I want a <feature>, so that <benefit>
 
@@ -38,7 +38,7 @@ A LONG, numbered list of user stories. Each user story should be in the format o
 1. As a mobile bank customer, I want to see balance on my accounts, so that I can make better informed decisions about my spending
 </user-story-example>
 
-This list of user stories should be extremely extensive and cover all aspects of the feature.
+Cover distinct scenarios and edge cases without repeating the same requirement for every field.
 
 ## Implementation Decisions
 
@@ -63,6 +63,11 @@ A list of testing decisions that were made. Include:
 - A description of what makes a good test (only test external behavior, not implementation details)
 - Which modules will be tested
 - Prior art for the tests (i.e. similar types of tests in the codebase)
+- A short user acceptance scenario with its expected result; this is a plan, not a claim that acceptance has happened
+
+## Acceptance Criteria
+
+Observable outcomes that make the specification ready to become implementation tickets, including success, invalid data, and relevant conflicts. Distinguish acceptance requirements from any unresolved product questions.
 
 ## Out of Scope
 

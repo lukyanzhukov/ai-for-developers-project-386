@@ -2,7 +2,35 @@
 
 Repository: `lukyanzhukov/ai-for-developers-project-386`.
 
-Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
+Product decision maps and implementation tickets live as GitHub issues. Specification preparation is a workflow stage; the approved specification belongs in the implementation ticket. Use the `gh` CLI for tracker operations.
+
+## Workflow and artifacts
+
+Read this section before preparing a specification, publishing tickets, or implementing a feature. It defines the handoff between `/wayfinder`, `/to-spec`, `/to-tickets`, and `/implement-spec`.
+
+| Stage                     | Artifact and completion condition                                                                                                                                                                                                                                                                              |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Product decisions         | A wayfinding map indexes questions and their agreed answers. Decisions describe the intended behavior; code delivery is outside the map.                                                                                                                                                                       |
+| Specification preparation | A draft in the conversation turns agreed decisions into precise behavior, API requirements, and acceptance criteria. The stage ends when the user approves the specification. No separate specification issue is created.                                                                                      |
+| Ticket publication        | Each implementation ticket contains the approved specification of its vertical slice and links to relevant decisions and the API contract. Its title names the delivered behavior, for example “Гость записывается на свободный слот”. An optional parent groups functionality, not specification preparation. |
+| Implementation            | Code and PRs deliver the ticket's behavior; automated checks and review provide evidence against its acceptance criteria.                                                                                                                                                                                      |
+| User acceptance           | A short, runnable scenario lets the user check the delivered behavior. Record the user's actual result separately from automated verification.                                                                                                                                                                 |
+
+Publish `ready-for-agent` tickets only after their product decisions and specifications are agreed. A fully specified ticket may still wait for another implementation ticket; use native dependencies to express that execution order. An unresolved product question belongs in the decision map or specification draft, not in an agent-ready implementation ticket.
+
+Preparation skills end with a reviewable artifact. Start another stage only when the user requested it; an explicit request for several stages authorizes that sequence without repeated permission questions. Approval of requirements does not by itself authorize implementation or publication to `main`.
+
+### Progress and handoff
+
+At the start of a stage and at meaningful milestones, state: **current stage → result → evidence → what is needed from the user**. If no user action is needed, say what remains and continue within the authorized scope. Prefer delivered behavior over accounts of subagent, worktree, and merge activity.
+
+At delivery, report these outcomes separately:
+
+- **Code:** what is implemented and where it can be reviewed or run.
+- **Automated verification:** commands and CI results, including checks not yet run or failing.
+- **User acceptance:** a short scenario, expected result, and status: not performed, awaiting the user, passed, or changes requested. Mark it passed only after the user reports that result.
+
+A green CI run, specification approval, and merge permission are evidence for their own stages; none counts as user acceptance. If a ticket requires user acceptance for completion, keep it open until that criterion is met. Otherwise report code completion while explicitly retaining the unperformed acceptance status. A separate acceptance issue is not required.
 
 ## Conventions
 
@@ -34,7 +62,7 @@ GitHub shares one number space across issues and PRs, so a bare `#42` may be eit
 
 ## When a skill says "publish to the issue tracker"
 
-Create a GitHub issue.
+Publish the artifact appropriate to its stage: decision maps/questions or implementation tickets containing an approved specification. Specification preparation itself produces a draft for review, not an issue.
 
 ## When a skill says "fetch the relevant ticket"
 
