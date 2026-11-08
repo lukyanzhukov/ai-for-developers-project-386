@@ -87,7 +87,6 @@ export function MeetingTypes({
                       <Text size="sm" fw={600} className="meeting-choice-state">
                         {selectedId === item.id ? "Выбрано" : "Выбрать встречу"}
                       </Text>
-                      <Radio.Indicator variant="outline" color="#9b8054" />
                     </Group>
                   </Stack>
                 </Radio.Card>

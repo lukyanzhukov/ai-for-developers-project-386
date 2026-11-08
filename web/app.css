@@ -835,14 +835,15 @@ h3 {
   border-color: #aea79b;
 }
 .meeting-choice[data-checked] {
-  border-color: #b7a589;
-  background: #f3f0e9;
+  border-color: #76716a;
+  background: #f8f7f3;
+  box-shadow: inset 3px 0 0 #c5b28e;
 }
 .meeting-choice-state {
   color: #716b5e;
 }
 .meeting-choice[data-checked] .meeting-choice-state {
-  color: #756349;
+  color: #49453e;
 }
 .wizard-actions {
   grid-column: 1 / -1;
@@ -856,13 +857,15 @@ h3 {
   min-height: 46px;
 }
 .time-slots .mantine-Button-root[aria-pressed="true"] {
-  background: #ece3d1;
-  color: #5f4e34;
-  border: 2px solid #9b8054;
+  background: #3c3a35;
+  color: #fffdf8;
+  border: 1px solid #68645d;
+  box-shadow: inset 0 -2px 0 #c8b58e;
 }
 .calendar-day[aria-pressed="true"] {
-  border: 2px solid #b4965f;
-  box-shadow: 0 0 0 1px #292722;
+  background: #3c3a35;
+  border: 1px solid #797268;
+  box-shadow: inset 0 -2px 0 #c8b58e;
   font-weight: 700;
 }
 .owner-calendar-layout {
