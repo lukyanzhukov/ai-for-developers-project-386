@@ -823,7 +823,7 @@ h3 {
 .meeting-choice {
   padding: 28px;
   width: 100%;
-  border: 2px solid var(--line);
+  border: 1px solid var(--line);
   border-radius: 12px;
   background: #fff;
   overflow-wrap: anywhere;
@@ -835,15 +835,14 @@ h3 {
   border-color: #aea79b;
 }
 .meeting-choice[data-checked] {
-  border-color: #302d27;
-  background: #f0ede5;
-  box-shadow: 0 0 0 1px #302d27;
+  border-color: #b7a589;
+  background: #f3f0e9;
 }
 .meeting-choice-state {
   color: #716b5e;
 }
 .meeting-choice[data-checked] .meeting-choice-state {
-  color: #292722;
+  color: #756349;
 }
 .wizard-actions {
   grid-column: 1 / -1;
