@@ -215,6 +215,31 @@ hk выполняет быстрые проверки изменённых фа�
 Новый workflow `.github/workflows/ci.yml` вызывает тот же `mise run check` на каждый push.
 Учебный `hexlet-check.yml` сохранён без изменений. Actions закреплены по SHA; права CI — только чтение.
 
+### Выпуски
+
+Отдельный workflow `.github/workflows/release-please.yml` запускается при push в `main`.
+Официальный [Release Please Action](https://github.com/googleapis/release-please-action)
+закреплён по SHA и использует стратегию `node`: по Conventional Commits готовит и обновляет
+release-PR с версией в `package.json` и `CHANGELOG.md`. После ручного слияния release-PR
+следующий запуск создаёт Git-тег и GitHub Release. Пакет остаётся приватным; публикации в npm
+и развёртывания в этом workflow нет. `feat` и `fix` дают повод для выпуска; один `chore` или
+`docs` сам по себе release-PR не создаёт.
+
+Workflow использует встроенный `GITHUB_TOKEN` с правами `contents: write` и
+`pull-requests: write`; дополнительные секреты не нужны. В Settings → Actions → General →
+Workflow permissions необходимо разрешить **Allow GitHub Actions to create and approve pull requests**.
+Остальные workflow сохраняют свои права только на чтение. Новая workflow-проверка входит в
+`mise run check` через `hk` и `jactionlint`.
+
+События от встроенного `GITHUB_TOKEN` не запускают новые workflow: созданный ботом release-PR
+не получит автоматический CI-прогон. Перед его слиянием нужно локально выполнить `mise run check`
+на ветке release-PR. Для автоматических проверок таких PR потребуется отдельно настроенный
+GitHub App или PAT и соответствующий CI-триггер.
+
+Настройка считается проверенной в GitHub после push в `main`: в Actions должен успешно
+завершиться **Release Please**, а в Pull requests — появиться release-PR. Локальный
+`mise run check` проверяет конфигурацию workflow, но не заменяет эту проверку прав и запуска.
+
 ### Сообщения коммитов
 
 Используем [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/):
