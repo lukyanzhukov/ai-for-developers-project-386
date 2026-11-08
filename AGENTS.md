@@ -49,3 +49,17 @@ mise run fix          # автоисправления линтера и фор�
 ## Актуальная информация о проекте
 
 За описанием возможностей, ограничений и инструкциями запуска обращайтесь к [README.md](README.md). Обновляйте его вместе с изменениями поведения и настройки приложения. Не записывайте в `AGENTS.md` статус реализации, число тестов, временные ограничения версий и результаты отдельных прогонов.
+
+## Agent skills
+
+### Issue tracker
+
+Задачи и спецификации ведутся в GitHub Issues репозитория `lukyanzhukov/ai-for-developers-project-386`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Стандартные метки: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: общий `GLOSSARY.md` в корне и решения в `docs/adr/`. See `docs/agents/domain.md`.
