@@ -217,6 +217,7 @@ export function Calendar({ id: initialId }: { id: string | null }) {
         <Progress
           value={((activeStep + 1) / 3) * 100}
           aria-label="Прогресс записи"
+          color="#b5a17e"
           mt="lg"
           size={4}
         />
