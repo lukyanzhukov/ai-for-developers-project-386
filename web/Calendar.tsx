@@ -202,9 +202,6 @@ export function Calendar({ id: initialId }: { id: string | null }) {
   return (
     <Stack className="booking-wizard" gap="xl">
       <section className="wizard-progress" aria-label="Шаги записи">
-        <Text size="sm" c="dimmed" mb="md">
-          Шаг {activeStep + 1} из 3
-        </Text>
         <Stepper
           active={activeStep}
           allowNextStepsSelect={false}
@@ -233,9 +230,7 @@ export function Calendar({ id: initialId }: { id: string | null }) {
       ) : (
         <Stack className="booking-page" gap="lg">
           <div className="booking-heading">
-            <Text className="eyebrow">
-              {step === "form" ? "Шаг 3 · Ваши данные" : "Шаг 2 · Удобное время"}
-            </Text>
+            <Text className="eyebrow">{step === "form" ? "Ваши данные" : "Удобное время"}</Text>
             <Title order={1} tabIndex={-1}>
               {step === "form" ? "Подтвердите запись" : "Выберите дату и время"}
             </Title>
