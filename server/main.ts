@@ -9,7 +9,7 @@ if (!Number.isInteger(port) || port < 0 || port > 65535) {
   throw new Error("PORT must be an integer between 0 and 65535");
 }
 const app = Fastify({ logger: true });
-const handlers: RouteHandlers = {
+const handlers: Pick<RouteHandlers, "getHealth"> = {
   getHealth: async (_request, reply) => reply.code(200).send({ status: "ok" }),
 };
 
