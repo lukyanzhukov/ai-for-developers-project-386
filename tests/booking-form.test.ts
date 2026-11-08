@@ -40,8 +40,24 @@ test("guest recovers from slot conflict without losing data and confirms another
       signal: AbortSignal.timeout(3000),
       throwOnError: true,
     });
+    await page.route("**/api/meeting-types/intro/availability", (route) => route.abort("failed"), {
+      times: 1,
+    });
     await page.getByRole("button", { name: "Подтвердить запись", exact: true }).click();
     await page.getByRole("alert").getByText("Это время уже заняли. Выберите другой слот").waitFor();
+    await page
+      .getByText("Не удалось обновить календарь. Показаны прежние данные; слоты могли устареть.", {
+        exact: true,
+      })
+      .waitFor();
+    await page.getByRole("heading", { name: "Знакомство", exact: true }).waitFor();
+    expect(await page.getByRole("button", { name: "09:00–09:30", exact: true }).isDisabled()).toBe(
+      true,
+    );
+    await page.getByRole("button", { name: "Повторить", exact: true }).click();
+    await page
+      .getByRole("button", { name: "09:00–09:30", exact: true })
+      .waitFor({ state: "detached" });
     await page.getByRole("button", { name: "09:30–10:00", exact: true }).waitFor();
     expect(await page.getByRole("button", { name: "09:00–09:30", exact: true }).count()).toBe(0);
     await page.getByRole("button", { name: "09:30–10:00", exact: true }).click();
@@ -144,6 +160,41 @@ test("unknown network result retries the same payload and key, while edits use a
     await page.getByRole("heading", { name: "Запись подтверждена", exact: true }).waitFor();
   } finally {
     release!();
+    try {
+      await browser?.close();
+    } finally {
+      await server.close();
+    }
+  }
+});
+
+test("long valid guest and meeting names fit mobile calendar, form and confirmation", async () => {
+  const server = await startServer([{ ...type, title: "В".repeat(120) }], {
+    now: ["2026-11-08T17:00:00Z"],
+  });
+  let browser: Browser | undefined;
+  try {
+    browser = await chromium.launch({ timeout: 5000 });
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    page.setDefaultTimeout(3000);
+    page.setDefaultNavigationTimeout(3000);
+    await page.goto(`${server.address}/booking?type=intro`);
+    await page.getByRole("button", { name: "09:00–09:30", exact: true }).click();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      390,
+    );
+    await page.getByRole("button", { name: "Продолжить", exact: true }).click();
+    await page.getByLabel(/^Имя/).fill("Г".repeat(120));
+    await page.getByLabel(/^Email/).fill(`${"a".repeat(60)}@example.com`);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      390,
+    );
+    await page.getByRole("button", { name: "Подтвердить запись", exact: true }).click();
+    await page.getByRole("heading", { name: "Запись подтверждена", exact: true }).waitFor();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      390,
+    );
+  } finally {
     try {
       await browser?.close();
     } finally {

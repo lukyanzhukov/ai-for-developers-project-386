@@ -17,6 +17,9 @@ for (const viewport of [
       await page.goto(`${server.address}/admin`);
       await page.getByLabel(/^Название/).fill("Обсуждение проекта");
       await page.getByRole("button", { name: "Создать тип встречи", exact: true }).click();
+      await page
+        .getByRole("link", { name: "Открыть созданный тип в публичном списке", exact: true })
+        .click();
       await page.getByRole("link", { name: "Выбрать время", exact: true }).click();
       await page.getByRole("button", { name: "09:00–09:30", exact: true }).click();
       await page.getByRole("button", { name: "Продолжить", exact: true }).click();

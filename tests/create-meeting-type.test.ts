@@ -140,10 +140,19 @@ test("owner sees duplicate warning links, keeps conflicts and publishes a custom
         .getAttribute("href"),
     ).toBe("/booking#meeting-type-intro");
     await page.getByText("Исходный тип", { exact: true }).waitFor();
+    await page.getByLabel("Описание", { exact: true }).fill("Черновик");
+    await page.getByLabel("ID", { exact: true }).fill("draft-id");
+    const opened = page.waitForEvent("popup");
     await page.getByRole("link", { name: "Знакомство — 30 мин", exact: true }).click();
-    await page.locator("#meeting-type-intro").getByText("Исходный тип", { exact: true }).waitFor();
-    await page.goBack();
-    await page.getByLabel(/^Название/).fill(" знакомство ");
+    const comparison = await opened;
+    await comparison
+      .locator("#meeting-type-intro")
+      .getByText("Исходный тип", { exact: true })
+      .waitFor();
+    await comparison.close();
+    expect(await page.getByLabel(/^Название/).inputValue()).toBe(" знакомство ");
+    expect(await page.getByLabel("Описание", { exact: true }).inputValue()).toBe("Черновик");
+    expect(await page.getByLabel("ID", { exact: true }).inputValue()).toBe("draft-id");
     await page.getByLabel("Описание", { exact: true }).fill("Новая встреча");
     await page.getByLabel("Длительность", { exact: true }).selectOption("custom");
     await page.getByLabel(/^Минуты/).fill("17");
@@ -157,6 +166,10 @@ test("owner sees duplicate warning links, keeps conflicts and publishes a custom
     expect(await page.getByLabel(/^Минуты/).inputValue()).toBe("17");
     await page.getByLabel("ID", { exact: true }).fill("");
     await page.getByRole("button", { name: "Создать тип встречи", exact: true }).click();
+    await page.getByText("Тип встречи создан", { exact: true }).waitFor();
+    await page
+      .getByRole("link", { name: "Открыть созданный тип в публичном списке", exact: true })
+      .click();
     await page.getByRole("heading", { name: "Выберите тип встречи", exact: true }).waitFor();
     const item = page.getByRole("listitem").filter({ hasText: "Новая встреча" });
     expect(await item.textContent()).toContain("17 мин");

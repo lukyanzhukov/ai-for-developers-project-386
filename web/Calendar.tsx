@@ -13,7 +13,12 @@ export function Calendar({ id }: { id: string }) {
   const [state, setState] = useState<
     | { status: "loading" }
     | { status: "error"; missing: boolean }
-    | { status: "ready"; availability: Availability; meetingType: MeetingType }
+    | {
+        status: "ready";
+        availability: Availability;
+        meetingType: MeetingType;
+        stale?: "loading" | "error";
+      }
   >({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [date, setDate] = useState("");
@@ -49,14 +54,18 @@ export function Calendar({ id }: { id: string }) {
       })
       .catch((error: unknown) => {
         if (!controller.signal.aborted)
-          setState({
-            status: "error",
-            missing:
-              typeof error === "object" &&
-              error !== null &&
-              "code" in error &&
-              error.code === "MEETING_TYPE_NOT_FOUND",
-          });
+          setState((previous) =>
+            previous.status === "ready"
+              ? { ...previous, stale: "error" }
+              : {
+                  status: "error",
+                  missing:
+                    typeof error === "object" &&
+                    error !== null &&
+                    "code" in error &&
+                    error.code === "MEETING_TYPE_NOT_FOUND",
+                },
+          );
       });
     return () => controller.abort();
   }, [id, attempt]);
@@ -74,7 +83,7 @@ export function Calendar({ id }: { id: string }) {
       : undefined;
   if (booking)
     return (
-      <Stack className="hero" gap="lg">
+      <Stack className="hero" gap="lg" style={{ minWidth: 0, overflowWrap: "anywhere" }}>
         <Title order={1}>Запись подтверждена</Title>
         <Text component="output">
           {booking.meetingTypeTitle},{" "}
@@ -98,7 +107,7 @@ export function Calendar({ id }: { id: string }) {
       </Stack>
     );
   return (
-    <Stack className="hero" gap="lg">
+    <Stack className="hero" gap="lg" style={{ minWidth: 0, overflowWrap: "anywhere" }}>
       <Button component="a" href="/booking" variant="subtle" style={{ alignSelf: "flex-start" }}>
         К типам встреч
       </Button>
@@ -132,6 +141,26 @@ export function Calendar({ id }: { id: string }) {
         </Alert>
       ) : (
         <>
+          {state.stale && (
+            <Alert color="yellow" role="alert">
+              <Stack align="flex-start">
+                <Text>
+                  {state.stale === "loading"
+                    ? "Обновление календаря…"
+                    : "Не удалось обновить календарь. Показаны прежние данные; слоты могли устареть."}
+                </Text>
+                <Button
+                  disabled={state.stale === "loading"}
+                  onClick={() => {
+                    setState({ ...state, stale: "loading" });
+                    setAttempt((value) => value + 1);
+                  }}
+                >
+                  Повторить
+                </Button>
+              </Stack>
+            </Alert>
+          )}
           <Title order={2}>{state.meetingType.title}</Title>
           <Text>
             {state.meetingType.durationMinutes} мин · {state.availability.timeZone}
@@ -162,6 +191,7 @@ export function Calendar({ id }: { id: string }) {
                       key={slot.startsAt}
                       variant={selected?.startsAt === slot.startsAt ? "filled" : "light"}
                       aria-pressed={selected?.startsAt === slot.startsAt}
+                      disabled={Boolean(state.stale)}
                       onClick={() => setSelected(slot)}
                     >
                       {interval(slot)}
@@ -232,7 +262,7 @@ export function Calendar({ id }: { id: string }) {
                         setError(result.error.message);
                         setStep("calendar");
                         setSelected(undefined);
-                        setState({ status: "loading" });
+                        setState({ ...state, stale: "loading" });
                         setAttempt((value) => value + 1);
                       } else if (
                         result.error?.code === "INVALID_SLOT" ||
