@@ -467,7 +467,7 @@ h3 {
   align-content: start;
   overflow-y: auto;
   max-height: 318px;
-  padding: 1px 5px 1px 1px;
+  padding: 6px;
   margin-top: 20px;
   scrollbar-width: thin;
   scrollbar-color: #d7d2c8 transparent;
@@ -856,10 +856,9 @@ h3 {
   min-height: 46px;
 }
 .time-slots .mantine-Button-root[aria-pressed="true"] {
-  background: #292722;
-  color: #fff;
-  border: 2px solid #292722;
-  box-shadow: 0 0 0 2px #d8c9a5;
+  background: #ece3d1;
+  color: #5f4e34;
+  border: 2px solid #9b8054;
 }
 .calendar-day[aria-pressed="true"] {
   border: 2px solid #b4965f;
