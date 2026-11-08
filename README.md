@@ -279,7 +279,7 @@ CI проверяет диапазон новых коммитов из `COMMIT_
 ## Docker и Render
 
 Публичный сервис: [Календарь звонков](https://call-calendar-386-o6lw.onrender.com).
-Render собирает Dockerfile из ветки `codex/docker-render-deploy`. После push агент запускает
+Render собирает Dockerfile из ветки `main`. После push агент запускает
 деплой через MCP и дожидается статуса `live`: у текущего сервиса источник — публичный Git URL.
 Сервис работает на бесплатном плане во Frankfurt; после простоя возможен холодный старт.
 
