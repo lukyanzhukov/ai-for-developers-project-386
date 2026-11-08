@@ -14,6 +14,7 @@ import {
 } from "@mantine/core";
 import "./app.css";
 import { CreateMeetingType } from "./CreateMeetingType.tsx";
+import { Calendar } from "./Calendar.tsx";
 import { MeetingTypes } from "./MeetingTypes.tsx";
 
 const steps = [
@@ -33,6 +34,8 @@ const steps = [
 ];
 
 export function App({ pathname }: { pathname: string }) {
+  const meetingTypeId =
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("type");
   const isBooking = pathname === "/booking";
 
   return (
@@ -49,7 +52,7 @@ export function App({ pathname }: { pathname: string }) {
           <CreateMeetingType />
         ) : isBooking ? (
           <>
-            <MeetingTypes />
+            {meetingTypeId !== null ? <Calendar id={meetingTypeId} /> : <MeetingTypes />}
             <Button component="a" href="/" color="teal" mb="xl">
               На главную
             </Button>
@@ -73,7 +76,7 @@ export function App({ pathname }: { pathname: string }) {
                 Записаться
               </Button>
               <Text size="sm" c="dimmed">
-                Список типов встреч доступен. Выбор времени и запись скоро появятся.
+                Выбор типа встречи и времени доступен. Подтверждение записи скоро появится.
               </Text>
             </Stack>
 
