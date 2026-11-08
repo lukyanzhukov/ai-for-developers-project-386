@@ -13,6 +13,7 @@ import {
   Title,
 } from "@mantine/core";
 import "./app.css";
+import { MeetingTypes } from "./MeetingTypes.tsx";
 
 const steps = [
   {
@@ -46,21 +47,12 @@ export function App({ pathname }: { pathname: string }) {
 
       <Box component="main" id="main-content">
         {isBooking ? (
-          <Stack className="hero" align="flex-start" gap="lg">
-            <Badge variant="light" color="teal" size="lg">
-              Скоро
-            </Badge>
-            <Title order={1} className="hero-title">
-              Запись скоро появится
-            </Title>
-            <Text size="lg" c="dimmed" maw={580}>
-              Мы готовим страницу выбора типа встречи и свободного времени. Пока записаться на
-              встречу через сервис нельзя.
-            </Text>
-            <Button component="a" href="/" color="teal" size="lg" radius="md">
+          <>
+            <MeetingTypes />
+            <Button component="a" href="/" color="teal" mb="xl">
               На главную
             </Button>
-          </Stack>
+          </>
         ) : (
           <>
             <Stack className="hero" align="flex-start" gap="lg">
@@ -80,7 +72,7 @@ export function App({ pathname }: { pathname: string }) {
                 Записаться
               </Button>
               <Text size="sm" c="dimmed">
-                Онлайн-запись скоро появится. Пока можно узнать, как устроен сервис.
+                Список типов встреч доступен. Выбор времени и запись скоро появятся.
               </Text>
             </Stack>
 

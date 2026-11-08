@@ -2,7 +2,7 @@ import { fork } from "node:child_process";
 import { once } from "node:events";
 import { chromium } from "playwright";
 import { expect, test } from "vitest";
-import { getHealth } from "../generated/api/sdk.gen.ts";
+import { getHealth, listMeetingTypes } from "../generated/api/sdk.gen.ts";
 
 test("built application starts and serves the API through the SDK and the frontend", async () => {
   const child = fork("dist/server/main.js", [], {
@@ -40,6 +40,15 @@ test("built application starts and serves the API through the SDK and the fronte
     expect(result.response.status).toBe(200);
     expect(result.data).toEqual({ status: "ok" });
 
+    const types = await listMeetingTypes({
+      baseUrl: address,
+      throwOnError: true,
+      signal: AbortSignal.timeout(3000),
+    });
+    expect(types.response.status).toBe(200);
+    expect(types.response.headers.get("content-type")).toContain("application/json");
+    expect(types.data).toEqual({ items: [] });
+
     const page = await fetch(address, { signal: AbortSignal.timeout(3000) });
     expect(page.status).toBe(200);
     const html = await page.text();
@@ -72,9 +81,13 @@ test("built application starts and serves the API through the SDK and the fronte
 
         await page.getByRole("link", { name: "Записаться", exact: true }).click();
         await page.waitForURL(new URL("/booking", address).href);
-        await page.getByRole("heading", { name: "Запись скоро появится", exact: true }).waitFor();
+        await page.getByRole("heading", { name: "Выберите тип встречи", exact: true }).waitFor();
+        await page
+          .getByRole("status")
+          .getByText("Типов встреч пока нет.", { exact: true })
+          .waitFor();
         await page.reload();
-        await page.getByRole("heading", { name: "Запись скоро появится", exact: true }).waitFor();
+        await page.getByRole("heading", { name: "Выберите тип встречи", exact: true }).waitFor();
         expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
           viewport.width,
         );
