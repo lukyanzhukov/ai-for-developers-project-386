@@ -23,6 +23,7 @@ export function CreateMeetingType() {
   const [listError, setListError] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
+  const [created, setCreated] = useState<MeetingType>();
   const [saving, setSaving] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
@@ -41,6 +42,18 @@ export function CreateMeetingType() {
   const matches = items.filter(
     (item) => item.title.trim().toLowerCase() === title.trim().toLowerCase(),
   );
+  if (created)
+    return (
+      <Stack className="hero" gap="lg">
+        <Title order={1}>Тип встречи создан</Title>
+        <Text style={{ overflowWrap: "anywhere" }}>
+          {created.title} — {created.durationMinutes} мин
+        </Text>
+        <Anchor href={`/booking#meeting-type-${created.id}`}>
+          Открыть созданный тип в публичном списке
+        </Anchor>
+      </Stack>
+    );
   return (
     <Stack className="hero" gap="lg" maw={650}>
       <Title order={1}>Новый тип встречи</Title>
@@ -66,7 +79,7 @@ export function CreateMeetingType() {
               signal: AbortSignal.timeout(10000),
             });
             if (result.data) {
-              window.location.assign(`/booking#meeting-type-${result.data.id}`);
+              setCreated(result.data);
             } else if (result.error?.code === "ID_ALREADY_EXISTS") {
               setErrors({ id: result.error.message });
             } else if (result.error?.code === "VALIDATION_ERROR") {
@@ -97,7 +110,11 @@ export function CreateMeetingType() {
               <Text>Тип встречи с таким названием уже существует</Text>
               {matches.map((item) => (
                 <Stack key={item.id} gap={0}>
-                  <Anchor href={`/booking#meeting-type-${item.id}`}>
+                  <Anchor
+                    href={`/booking#meeting-type-${item.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     {item.title} — {item.durationMinutes} мин
                   </Anchor>
                   <Text style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>

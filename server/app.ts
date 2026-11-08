@@ -8,6 +8,21 @@ import * as schemas from "../generated/api/schemas.gen.ts";
 import type { Availability, Booking, MeetingType } from "../generated/api/types.gen.ts";
 
 const timeZone = "Asia/Novokuznetsk";
+const windowDays = 14;
+const slotStep = 15 * 60000;
+const dateOffset = (date: string, offset: number) => {
+  const day = new Date(`${date}T00:00:00Z`);
+  day.setUTCDate(day.getUTCDate() + offset);
+  return day.toISOString().slice(0, 10);
+};
+const dayBounds = (date: string) => {
+  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
+  return {
+    working: weekday !== 0 && weekday !== 6,
+    opening: Date.parse(`${date}T09:00:00+07:00`),
+    closing: Date.parse(`${date}T18:00:00+07:00`),
+  };
+};
 const ownerDate = (instant: Date) =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone,
@@ -142,29 +157,25 @@ export async function createApp({
       const end = start + meetingType.durationMinutes * 60000;
       const date = ownerDate(new Date(start));
       const today = ownerDate(serverNow);
-      const lastDay = new Date(`${today}T00:00:00Z`);
-      lastDay.setUTCDate(lastDay.getUTCDate() + 13);
+      const lastDay = dateOffset(today, windowDays - 1);
       if (start <= serverNow.getTime())
         return reply.code(409).send({
           code: "SLOT_EXPIRED",
           message: "Выбранное время уже прошло. Выберите другой слот",
         });
-      if (date < today || date > lastDay.toISOString().slice(0, 10))
+      if (date < today || date > lastDay)
         return reply.code(409).send({
           code: "SLOT_OUTSIDE_WINDOW",
           message: "Выбранная дата вне окна записи. Выберите другой слот",
         });
-      const opening = Date.parse(`${date}T09:00:00+07:00`);
-      const closing = Date.parse(`${date}T18:00:00+07:00`);
-      const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
+      const { working, opening, closing } = dayBounds(date);
       // Date truncates sub-millisecond precision, so inspect the original seconds as well.
       const zeroSeconds = /:00(?:\.0+)?Z$/.test(startsAt);
       if (
-        weekday === 0 ||
-        weekday === 6 ||
+        !working ||
         start < opening ||
         end > closing ||
-        (start - opening) % 900000 !== 0 ||
+        (start - opening) % slotStep !== 0 ||
         !zeroSeconds
       )
         return reply.code(400).send({
@@ -201,18 +212,15 @@ export async function createApp({
       const serverNow = now();
       const today = ownerDate(serverNow);
       const days: Availability["days"][number][] = [];
-      for (let offset = 0; offset < 14; offset++) {
-        const day = new Date(`${today}T00:00:00Z`);
-        day.setUTCDate(day.getUTCDate() + offset);
-        const date = day.toISOString().slice(0, 10);
+      for (let offset = 0; offset < windowDays; offset++) {
+        const date = dateOffset(today, offset);
+        const { working, opening, closing } = dayBounds(date);
         const slots: Availability["days"][number]["slots"] = [];
-        if (day.getUTCDay() !== 0 && day.getUTCDay() !== 6) {
-          const opening = Date.parse(`${date}T09:00:00+07:00`);
-          const closing = Date.parse(`${date}T18:00:00+07:00`);
+        if (working) {
           for (
             let start = opening;
             start + meetingType.durationMinutes * 60000 <= closing;
-            start += 15 * 60000
+            start += slotStep
           ) {
             const end = start + meetingType.durationMinutes * 60000;
             if (start > serverNow.getTime() && !overlaps(bookings, start, end)) {
@@ -229,7 +237,7 @@ export async function createApp({
         serverNow: serverNow.toISOString(),
         timeZone,
         windowStart: days[0].date,
-        windowEnd: days[13].date,
+        windowEnd: days[windowDays - 1].date,
         days: days as Availability["days"],
       });
     },
