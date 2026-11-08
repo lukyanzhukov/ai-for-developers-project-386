@@ -153,6 +153,14 @@ test("owner sees duplicate warning links, keeps conflicts and publishes a custom
     expect(await page.getByLabel(/^Название/).inputValue()).toBe(" знакомство ");
     expect(await page.getByLabel("Описание", { exact: true }).inputValue()).toBe("Черновик");
     expect(await page.getByLabel("ID", { exact: true }).inputValue()).toBe("draft-id");
+    const publicListOpened = page.waitForEvent("popup");
+    await page.getByRole("link", { name: "Публичный список типов встреч", exact: true }).click();
+    const publicList = await publicListOpened;
+    await publicList.getByRole("heading", { name: "Выберите тип встречи", exact: true }).waitFor();
+    await publicList.close();
+    expect(await page.getByLabel(/^Название/).inputValue()).toBe(" знакомство ");
+    expect(await page.getByLabel("Описание", { exact: true }).inputValue()).toBe("Черновик");
+    expect(await page.getByLabel("ID", { exact: true }).inputValue()).toBe("draft-id");
     await page.getByLabel("Описание", { exact: true }).fill("Новая встреча");
     await page.getByLabel("Длительность", { exact: true }).selectOption("custom");
     await page.getByLabel(/^Минуты/).fill("17");
