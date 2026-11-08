@@ -429,7 +429,7 @@ h3 {
 .calendar-day[data-outside] {
   color: #ddd9d1;
 }
-.calendar-day:not(:disabled):hover {
+.calendar-day:not(:disabled):not([aria-pressed="true"]):hover {
   border-color: #77736a;
 }
 .calendar-day[aria-pressed="true"] {
