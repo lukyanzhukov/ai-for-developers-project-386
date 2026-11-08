@@ -51,6 +51,7 @@ export function MeetingTypes() {
             <Paper
               component="li"
               key={item.id}
+              id={`meeting-type-${item.id}`}
               p="lg"
               radius="md"
               withBorder

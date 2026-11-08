@@ -13,6 +13,7 @@ import {
   Title,
 } from "@mantine/core";
 import "./app.css";
+import { CreateMeetingType } from "./CreateMeetingType.tsx";
 import { MeetingTypes } from "./MeetingTypes.tsx";
 
 const steps = [
@@ -40,13 +41,13 @@ export function App({ pathname }: { pathname: string }) {
         <Anchor href="/" c="dark" fw={700} underline="never">
           Календарь звонков
         </Anchor>
-        <Text size="sm" c="dimmed">
-          Встречи без лишней переписки
-        </Text>
+        <Anchor href="/admin">Админка</Anchor>
       </Group>
 
       <Box component="main" id="main-content">
-        {isBooking ? (
+        {pathname === "/admin" ? (
+          <CreateMeetingType />
+        ) : isBooking ? (
           <>
             <MeetingTypes />
             <Button component="a" href="/" color="teal" mb="xl">
