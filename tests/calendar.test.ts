@@ -24,7 +24,8 @@ test("guest selects type, date and slot on desktop and mobile, with direct entry
       page.setDefaultNavigationTimeout(3000);
       try {
         await page.goto(`${server.address}/booking`);
-        await page.getByRole("link", { name: "Выбрать время" }).click();
+        await page.getByRole("radio", { name: "Знакомство, 17 мин", exact: true }).click();
+        await page.getByRole("button", { name: "Дальше", exact: true }).click();
         await page.waitForURL(`${server.address}/booking?type=intro`);
         await page.getByRole("heading", { name: "Выберите дату и время" }).waitFor();
         await page.getByRole("button", { name: "2026-11-14", exact: true }).click();
@@ -41,14 +42,11 @@ test("guest selects type, date and slot on desktop and mobile, with direct entry
         await page.reload();
         await page.getByRole("heading", { name: "Выберите дату и время" }).waitFor();
         await page.getByRole("button", { name: "2026-11-09", exact: true }).waitFor();
-        await page.getByRole("link", { name: "К типам встреч", exact: true }).click();
-        await page.getByRole("heading", { name: "Выберите тип встречи", exact: true }).waitFor();
+        await page.getByRole("button", { name: "Назад к встречам", exact: true }).click();
+        await page.getByRole("heading", { name: "Выберите встречу", exact: true }).waitFor();
         await page.goto(`${server.address}/booking?type=missing`);
-        await page
-          .getByRole("alert")
-          .getByText("Тип встречи не найден.", { exact: true })
-          .waitFor();
-        await page.getByRole("link", { name: "К типам встреч", exact: true }).waitFor();
+        await page.getByRole("alert").getByText("Встреча не найдена.", { exact: true }).waitFor();
+        await page.getByRole("button", { name: "Назад к встречам", exact: true }).waitFor();
       } finally {
         await page.close();
       }
@@ -100,6 +98,48 @@ test("guest sees calendar loading and request failure, then retries the real API
     expect(await page.getByRole("alert").count()).toBe(0);
   } finally {
     release!();
+    try {
+      await browser?.close();
+    } finally {
+      await server.close();
+    }
+  }
+});
+
+test("month calendar keeps the 14-day window across a month boundary and clears the old time", async () => {
+  const server = await startServer([meetingType], { now: ["2026-11-27T00:00:00Z"] });
+  let browser: Browser | undefined;
+  try {
+    browser = await chromium.launch({ timeout: 5000 });
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    page.setDefaultTimeout(3000);
+    await page.goto(`${server.address}/booking?type=intro`);
+    const previous = page.getByRole("button", { name: "Предыдущий месяц", exact: true });
+    const next = page.getByRole("button", { name: "Следующий месяц", exact: true });
+    await page.getByRole("button", { name: "2026-11-27", exact: true }).waitFor();
+    expect(await previous.isDisabled()).toBe(true);
+    expect(await page.getByRole("button", { name: "2026-11-26", exact: true }).isDisabled()).toBe(
+      true,
+    );
+    await page.getByRole("button", { name: "2026-11-30", exact: true }).click();
+    await page.getByRole("button", { name: "09:00–09:17", exact: true }).click();
+    expect(await page.getByRole("button", { name: "Дальше", exact: true }).isEnabled()).toBe(true);
+    await next.click();
+    expect(await next.isDisabled()).toBe(true);
+    expect(await page.getByRole("button", { name: "2026-12-11", exact: true }).isDisabled()).toBe(
+      true,
+    );
+    await page.getByRole("button", { name: "2026-12-01", exact: true }).focus();
+    await page.keyboard.press("Enter");
+    expect(await page.getByRole("button", { name: "Дальше", exact: true }).isDisabled()).toBe(true);
+    await page.getByRole("button", { name: "09:00–09:17", exact: true }).click();
+    expect(await page.getByRole("status").textContent()).toContain("2026-12-01, 09:00–09:17");
+    await previous.click();
+    expect(await previous.isDisabled()).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      390,
+    );
+  } finally {
     try {
       await browser?.close();
     } finally {

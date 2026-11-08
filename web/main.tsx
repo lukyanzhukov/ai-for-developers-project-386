@@ -6,7 +6,19 @@ import { App } from "./App.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <MantineProvider>
+    <MantineProvider
+      theme={{
+        primaryColor: "dark",
+        defaultRadius: "md",
+        fontFamily: "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+        headings: { fontFamily: "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" },
+        components: {
+          Button: { defaultProps: { color: "dark" } },
+          TextInput: { defaultProps: { size: "md" } },
+          Textarea: { defaultProps: { size: "md" } },
+        },
+      }}
+    >
       <App pathname={window.location.pathname} />
     </MantineProvider>
   </StrictMode>,

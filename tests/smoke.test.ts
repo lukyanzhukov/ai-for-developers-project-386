@@ -79,20 +79,22 @@ test("built application starts and serves the API through the SDK and the fronte
           viewport.width,
         );
 
-        await page.getByRole("link", { name: "Записаться", exact: true }).click();
+        await page.getByRole("main").getByRole("link", { name: "Записаться", exact: true }).click();
         await page.waitForURL(new URL("/booking", address).href);
-        await page.getByRole("heading", { name: "Выберите тип встречи", exact: true }).waitFor();
+        await page.getByRole("heading", { name: "Выберите встречу", exact: true }).waitFor();
         await page
           .getByRole("status")
-          .getByText("Типов встреч пока нет.", { exact: true })
+          .getByText("Встреч для записи пока нет.", { exact: true })
           .waitFor();
         await page.reload();
-        await page.getByRole("heading", { name: "Выберите тип встречи", exact: true }).waitFor();
+        await page.getByRole("heading", { name: "Выберите встречу", exact: true }).waitFor();
         expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
           viewport.width,
         );
 
-        await page.getByRole("link", { name: "На главную", exact: true }).click();
+        await page
+          .getByRole("link", { name: "Календарь звонков — на главную", exact: true })
+          .click();
         await page.waitForURL(new URL("/", address).href);
         await page.getByRole("heading", { level: 1, name: /Меньше переписки/ }).waitFor();
         await page.close();

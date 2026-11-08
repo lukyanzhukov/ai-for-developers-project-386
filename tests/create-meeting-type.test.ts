@@ -131,9 +131,14 @@ test("owner sees duplicate warning links, keeps conflicts and publishes a custom
         exact: true,
       })
       .waitFor();
-    expect(await page.getByLabel("Длительность", { exact: true }).inputValue()).toBe("30");
+    expect(
+      await page.getByRole("radio", { name: "30 мин", exact: true }).getAttribute("aria-checked"),
+    ).toBe("true");
+    expect(await page.getByLabel("ID", { exact: true }).getAttribute("placeholder")).toBe(
+      "Автоматически",
+    );
     await page.getByLabel(/^Название/).fill(" знакомство ");
-    await page.getByText("Тип встречи с таким названием уже существует", { exact: true }).waitFor();
+    await page.getByText("Встреча с таким названием уже существует", { exact: true }).waitFor();
     expect(
       await page
         .getByRole("link", { name: "Знакомство — 30 мин", exact: true })
@@ -154,18 +159,18 @@ test("owner sees duplicate warning links, keeps conflicts and publishes a custom
     expect(await page.getByLabel("Описание", { exact: true }).inputValue()).toBe("Черновик");
     expect(await page.getByLabel("ID", { exact: true }).inputValue()).toBe("draft-id");
     const publicListOpened = page.waitForEvent("popup");
-    await page.getByRole("link", { name: "Публичный список типов встреч", exact: true }).click();
+    await page.getByRole("link", { name: "Открыть страницу записи ↗", exact: true }).click();
     const publicList = await publicListOpened;
-    await publicList.getByRole("heading", { name: "Выберите тип встречи", exact: true }).waitFor();
+    await publicList.getByRole("heading", { name: "Выберите встречу", exact: true }).waitFor();
     await publicList.close();
     expect(await page.getByLabel(/^Название/).inputValue()).toBe(" знакомство ");
     expect(await page.getByLabel("Описание", { exact: true }).inputValue()).toBe("Черновик");
     expect(await page.getByLabel("ID", { exact: true }).inputValue()).toBe("draft-id");
     await page.getByLabel("Описание", { exact: true }).fill("Новая встреча");
-    await page.getByLabel("Длительность", { exact: true }).selectOption("custom");
+    await page.getByRole("radio", { name: /Другая длительность/ }).click();
     await page.getByLabel(/^Минуты/).fill("17");
     await page.getByLabel("ID", { exact: true }).fill("intro");
-    await page.getByRole("button", { name: "Создать тип встречи", exact: true }).click();
+    await page.getByRole("button", { name: "Создать встречу", exact: true }).click();
     await page
       .getByText("Этот ID уже занят. Укажите другой или оставьте поле пустым", { exact: true })
       .waitFor();
@@ -173,12 +178,10 @@ test("owner sees duplicate warning links, keeps conflicts and publishes a custom
     expect(await page.getByLabel("Описание", { exact: true }).inputValue()).toBe("Новая встреча");
     expect(await page.getByLabel(/^Минуты/).inputValue()).toBe("17");
     await page.getByLabel("ID", { exact: true }).fill("");
-    await page.getByRole("button", { name: "Создать тип встречи", exact: true }).click();
-    await page.getByText("Тип встречи создан", { exact: true }).waitFor();
-    await page
-      .getByRole("link", { name: "Открыть созданный тип в публичном списке", exact: true })
-      .click();
-    await page.getByRole("heading", { name: "Выберите тип встречи", exact: true }).waitFor();
+    await page.getByRole("button", { name: "Создать встречу", exact: true }).click();
+    await page.getByText("Встреча создана", { exact: true }).waitFor();
+    await page.getByRole("link", { name: "Посмотреть на странице записи", exact: true }).click();
+    await page.getByRole("heading", { name: "Выберите встречу", exact: true }).waitFor();
     const item = page.getByRole("listitem").filter({ hasText: "Новая встреча" });
     expect(await item.textContent()).toContain("17 мин");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(

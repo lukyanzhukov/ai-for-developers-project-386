@@ -70,6 +70,10 @@ run = "pnpm run typecheck"
 depends = ["build"]
 run = "pnpm test"
 
+[tasks."deployment:check"]
+description = "Check a running deployment using synthetic booking data"
+run = "node scripts/check-deployment.mjs"
+
 [tasks.fix]
 run = "pnpm run fix"
 
