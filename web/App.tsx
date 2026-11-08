@@ -15,6 +15,7 @@ import {
 import "./app.css";
 import { CreateMeetingType } from "./CreateMeetingType.tsx";
 import { Calendar } from "./Calendar.tsx";
+import { UpcomingBookings } from "./UpcomingBookings.tsx";
 import { MeetingTypes } from "./MeetingTypes.tsx";
 
 const steps = [
@@ -36,6 +37,9 @@ const steps = [
 export function App({ pathname }: { pathname: string }) {
   const meetingTypeId =
     typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("type");
+  const isUpcoming =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("view") === "bookings";
   const isBooking = pathname === "/booking";
 
   return (
@@ -49,7 +53,13 @@ export function App({ pathname }: { pathname: string }) {
 
       <Box component="main" id="main-content">
         {pathname === "/admin" ? (
-          <CreateMeetingType />
+          <>
+            <Group component="nav" aria-label="Разделы владельца">
+              <Anchor href="/admin">Создать тип встречи</Anchor>
+              <Anchor href="/admin?view=bookings">Предстоящие встречи</Anchor>
+            </Group>
+            {isUpcoming ? <UpcomingBookings /> : <CreateMeetingType />}
+          </>
         ) : isBooking ? (
           <>
             {meetingTypeId !== null ? <Calendar id={meetingTypeId} /> : <MeetingTypes />}
