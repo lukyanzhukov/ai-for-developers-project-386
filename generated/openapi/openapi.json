@@ -6,6 +6,205 @@
   },
   "tags": [],
   "paths": {
+    "/api/bookings": {
+      "post": {
+        "operationId": "createBooking",
+        "description": "Atomically validate and save without overlaps across any meeting types, including concurrent requests. One in-memory server process only; types, bookings and idempotency state reset on restart. Bind the key to the first valid payload. Recognize a completed identical retry before checking slot availability and return the same booking with 200; first creation returns 201. Concurrent identical retries create one booking. Different payload with the same key returns IDEMPOTENCY_CONFLICT. A changed slot or guest data requires a new key. Missing/malformed fields or key return VALIDATION_ERROR; off-grid or outside working hours returns INVALID_SLOT. Missing type returns MEETING_TYPE_NOT_FOUND; elapsed, outside-window and occupied slots return the corresponding 409 codes. Failures never overwrite an existing booking.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request has succeeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "The request has succeeded and a new resource has been created as a result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The server could not understand the request due to invalid syntax.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationError"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "INVALID_SLOT"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The server cannot find the requested resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "MEETING_TYPE_NOT_FOUND"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with the current state of the server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "SLOT_TAKEN",
+                        "SLOT_EXPIRED",
+                        "SLOT_OUTSIDE_WINDOW",
+                        "IDEMPOTENCY_CONFLICT"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "INTERNAL_ERROR"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBooking"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listBookings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "The request has succeeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingList"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "INTERNAL_ERROR"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "operationId": "getHealth",
@@ -23,10 +222,443 @@
           }
         }
       }
+    },
+    "/api/meeting-types": {
+      "get": {
+        "operationId": "listMeetingTypes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "The request has succeeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeetingTypeList"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "INTERNAL_ERROR"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createMeetingType",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "The request has succeeded and a new resource has been created as a result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeetingType"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The server could not understand the request due to invalid syntax.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with the current state of the server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "ID_ALREADY_EXISTS"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "INTERNAL_ERROR"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMeetingType"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/meeting-types/{id}/availability": {
+      "get": {
+        "operationId": "getAvailability",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/MeetingTypeId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request has succeeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Availability"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The server could not understand the request due to invalid syntax.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The server cannot find the requested resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "MEETING_TYPE_NOT_FOUND"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "INTERNAL_ERROR"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "Availability": {
+        "type": "object",
+        "required": [
+          "serverNow",
+          "timeZone",
+          "windowStart",
+          "windowEnd",
+          "days"
+        ],
+        "properties": {
+          "serverNow": {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          "timeZone": {
+            "type": "string",
+            "enum": [
+              "Asia/Novokuznetsk"
+            ]
+          },
+          "windowStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "windowEnd": {
+            "type": "string",
+            "format": "date"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailabilityDay"
+            },
+            "minItems": 14,
+            "maxItems": 14,
+            "description": "All 14 dates, ascending, including dates with no slots. Window boundaries are inclusive."
+          }
+        },
+        "description": "Today and the next 13 calendar dates in the owner's time zone. Mon–Fri 09:00–18:00; starts every 15 minutes from 09:00. Starts must be strictly after serverNow, the whole interval must fit working hours, and overlaps with bookings of every type are excluded. Touching boundaries are allowed, without a buffer. No holidays or exceptions."
+      },
+      "AvailabilityDay": {
+        "type": "object",
+        "required": [
+          "date",
+          "slots"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Slot"
+            },
+            "description": "Free slots in ascending start order; empty on non-working or fully occupied dates."
+          }
+        }
+      },
+      "Booking": {
+        "type": "object",
+        "required": [
+          "id",
+          "meetingTypeId",
+          "meetingTypeTitle",
+          "durationMinutes",
+          "startsAt",
+          "endsAt",
+          "guestName",
+          "guestEmail",
+          "note",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "meetingTypeId": {
+            "$ref": "#/components/schemas/MeetingTypeId"
+          },
+          "meetingTypeTitle": {
+            "$ref": "#/components/schemas/Name"
+          },
+          "durationMinutes": {
+            "$ref": "#/components/schemas/DurationMinutes"
+          },
+          "startsAt": {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          "endsAt": {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          "guestName": {
+            "$ref": "#/components/schemas/Name"
+          },
+          "guestEmail": {
+            "$ref": "#/components/schemas/GuestEmail"
+          },
+          "note": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Note"
+              }
+            ],
+            "description": "Empty string if no note was supplied."
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/UtcInstant"
+          }
+        }
+      },
+      "BookingList": {
+        "type": "object",
+        "required": [
+          "serverNow",
+          "timeZone",
+          "items"
+        ],
+        "properties": {
+          "serverNow": {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          "timeZone": {
+            "type": "string",
+            "enum": [
+              "Asia/Novokuznetsk"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Booking"
+            },
+            "description": "All types, endsAt > serverNow, ordered by startsAt then id, without a 14-day limit. In-progress bookings are included. No pagination. Public without authentication; refreshed on opening or manually."
+          }
+        }
+      },
+      "CreateBooking": {
+        "type": "object",
+        "required": [
+          "meetingTypeId",
+          "startsAt",
+          "guestName",
+          "guestEmail"
+        ],
+        "properties": {
+          "meetingTypeId": {
+            "$ref": "#/components/schemas/MeetingTypeId"
+          },
+          "startsAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UtcInstant"
+              }
+            ],
+            "description": "A start from the availability grid. The server calculates duration and end from the meeting type and revalidates availability at save time."
+          },
+          "guestName": {
+            "$ref": "#/components/schemas/Name"
+          },
+          "guestEmail": {
+            "$ref": "#/components/schemas/GuestEmail"
+          },
+          "note": {
+            "$ref": "#/components/schemas/Note"
+          }
+        }
+      },
+      "CreateMeetingType": {
+        "type": "object",
+        "required": [
+          "title",
+          "durationMinutes"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/MeetingTypeId"
+          },
+          "title": {
+            "$ref": "#/components/schemas/Name"
+          },
+          "description": {
+            "$ref": "#/components/schemas/Note"
+          },
+          "durationMinutes": {
+            "$ref": "#/components/schemas/DurationMinutes"
+          }
+        },
+        "description": "Omit id to generate a random UUID. An explicitly empty id and null values are invalid. Omitted description becomes an empty string. Duplicate titles are allowed; the UI warns using the public list."
+      },
+      "DurationMinutes": {
+        "type": "integer",
+        "format": "int32",
+        "minimum": 1,
+        "maximum": 1440
+      },
+      "FieldError": {
+        "type": "object",
+        "required": [
+          "field",
+          "message"
+        ],
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "GuestEmail": {
+        "type": "string",
+        "maxLength": 254,
+        "format": "email",
+        "description": "Required email address, trimmed before validation; delivery is not verified."
+      },
       "Health": {
         "type": "object",
         "required": [
@@ -40,6 +672,123 @@
             ]
           }
         }
+      },
+      "MeetingType": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "durationMinutes",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/MeetingTypeId"
+          },
+          "title": {
+            "$ref": "#/components/schemas/Name"
+          },
+          "description": {
+            "$ref": "#/components/schemas/Note"
+          },
+          "durationMinutes": {
+            "$ref": "#/components/schemas/DurationMinutes"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/UtcInstant"
+          }
+        }
+      },
+      "MeetingTypeId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$",
+        "description": "Unique across all meeting types. Trim outer whitespace before validation; do not change case."
+      },
+      "MeetingTypeList": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeetingType"
+            },
+            "description": "All types, ordered by creation time ascending, then id. New types are published immediately."
+          }
+        }
+      },
+      "Name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120,
+        "description": "Trim outer whitespace before validation; whitespace-only values are invalid."
+      },
+      "Note": {
+        "type": "string",
+        "maxLength": 2000,
+        "description": "Plain text, never interpreted as HTML. Preserve internal whitespace and line breaks."
+      },
+      "Slot": {
+        "type": "object",
+        "required": [
+          "startsAt",
+          "endsAt"
+        ],
+        "properties": {
+          "startsAt": {
+            "$ref": "#/components/schemas/UtcInstant"
+          },
+          "endsAt": {
+            "$ref": "#/components/schemas/UtcInstant"
+          }
+        }
+      },
+      "UtcInstant": {
+        "type": "string",
+        "pattern": "Z$",
+        "format": "date-time",
+        "description": "An absolute instant in UTC, with a Z suffix."
+      },
+      "Uuid": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "ValidationError": {
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            },
+            "description": "Present only when errors relate to specific fields, including headers."
+          }
+        },
+        "allOf": [
+          {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VALIDATION_ERROR"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        ]
       }
     }
   }

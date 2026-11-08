@@ -22,11 +22,11 @@ test("home explains the booking rules and links to the booking page", () => {
   expect(html).toContain("предстоящие встречи всех типов");
 });
 
-test("booking placeholder explains that booking is unavailable and links home", () => {
+test("booking loads meeting types and links home", () => {
   const html = renderPage("/booking");
 
-  expect(html).toContain("Запись скоро появится");
-  expect(html).toContain("Пока записаться на встречу через сервис нельзя");
+  expect(html).toContain("Выберите тип встречи");
+  expect(html).toContain("Загрузка типов встреч");
   expect(html).toMatch(/<a\b[^>]*href="\/"[^>]*>.*?На главную.*?<\/a>/);
   expect(html).not.toContain("<form");
 });

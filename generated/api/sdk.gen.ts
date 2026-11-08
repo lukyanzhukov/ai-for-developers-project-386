@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.ts';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.ts';
-import type { GetHealthData, GetHealthResponses } from './types.gen.ts';
+import type { CreateBookingData, CreateBookingErrors, CreateBookingResponses, CreateMeetingTypeData, CreateMeetingTypeErrors, CreateMeetingTypeResponses, GetAvailabilityData, GetAvailabilityErrors, GetAvailabilityResponses, GetHealthData, GetHealthResponses, ListBookingsData, ListBookingsErrors, ListBookingsResponses, ListMeetingTypesData, ListMeetingTypesErrors, ListMeetingTypesResponses } from './types.gen.ts';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -18,4 +18,31 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
     meta?: keyof ClientMeta extends never ? Record<string, unknown> : ClientMeta;
 };
 
+export const listBookings = <ThrowOnError extends boolean = false>(options?: Options<ListBookingsData, ThrowOnError>): RequestResult<ListBookingsResponses, ListBookingsErrors, ThrowOnError> => (options?.client ?? client).get<ListBookingsResponses, ListBookingsErrors, ThrowOnError>({ url: '/api/bookings', ...options });
+
+/**
+ * Atomically validate and save without overlaps across any meeting types, including concurrent requests. One in-memory server process only; types, bookings and idempotency state reset on restart. Bind the key to the first valid payload. Recognize a completed identical retry before checking slot availability and return the same booking with 200; first creation returns 201. Concurrent identical retries create one booking. Different payload with the same key returns IDEMPOTENCY_CONFLICT. A changed slot or guest data requires a new key. Missing/malformed fields or key return VALIDATION_ERROR; off-grid or outside working hours returns INVALID_SLOT. Missing type returns MEETING_TYPE_NOT_FOUND; elapsed, outside-window and occupied slots return the corresponding 409 codes. Failures never overwrite an existing booking.
+ */
+export const createBooking = <ThrowOnError extends boolean = false>(options: Options<CreateBookingData, ThrowOnError>): RequestResult<CreateBookingResponses, CreateBookingErrors, ThrowOnError> => (options.client ?? client).post<CreateBookingResponses, CreateBookingErrors, ThrowOnError>({
+    url: '/api/bookings',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
 export const getHealth = <ThrowOnError extends boolean = false>(options?: Options<GetHealthData, ThrowOnError>): RequestResult<GetHealthResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetHealthResponses, unknown, ThrowOnError>({ url: '/api/health', ...options });
+
+export const listMeetingTypes = <ThrowOnError extends boolean = false>(options?: Options<ListMeetingTypesData, ThrowOnError>): RequestResult<ListMeetingTypesResponses, ListMeetingTypesErrors, ThrowOnError> => (options?.client ?? client).get<ListMeetingTypesResponses, ListMeetingTypesErrors, ThrowOnError>({ url: '/api/meeting-types', ...options });
+
+export const createMeetingType = <ThrowOnError extends boolean = false>(options: Options<CreateMeetingTypeData, ThrowOnError>): RequestResult<CreateMeetingTypeResponses, CreateMeetingTypeErrors, ThrowOnError> => (options.client ?? client).post<CreateMeetingTypeResponses, CreateMeetingTypeErrors, ThrowOnError>({
+    url: '/api/meeting-types',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getAvailability = <ThrowOnError extends boolean = false>(options: Options<GetAvailabilityData, ThrowOnError>): RequestResult<GetAvailabilityResponses, GetAvailabilityErrors, ThrowOnError> => (options.client ?? client).get<GetAvailabilityResponses, GetAvailabilityErrors, ThrowOnError>({ url: '/api/meeting-types/{id}/availability', ...options });

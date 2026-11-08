@@ -4,9 +4,240 @@ export type ClientOptions = {
     baseUrl: `${string}://generated` | (string & {});
 };
 
+/**
+ * Today and the next 13 calendar dates in the owner's time zone. Mon–Fri 09:00–18:00; starts every 15 minutes from 09:00. Starts must be strictly after serverNow, the whole interval must fit working hours, and overlaps with bookings of every type are excluded. Touching boundaries are allowed, without a buffer. No holidays or exceptions.
+ */
+export type Availability = {
+    serverNow: UtcInstant;
+    timeZone: 'Asia/Novokuznetsk';
+    windowStart: string;
+    windowEnd: string;
+    /**
+     * All 14 dates, ascending, including dates with no slots. Window boundaries are inclusive.
+     */
+    days: [
+        AvailabilityDay,
+        AvailabilityDay,
+        AvailabilityDay,
+        AvailabilityDay,
+        AvailabilityDay,
+        AvailabilityDay,
+        AvailabilityDay,
+        AvailabilityDay,
+        AvailabilityDay,
+        AvailabilityDay,
+        AvailabilityDay,
+        AvailabilityDay,
+        AvailabilityDay,
+        AvailabilityDay
+    ];
+};
+
+export type AvailabilityDay = {
+    date: string;
+    /**
+     * Free slots in ascending start order; empty on non-working or fully occupied dates.
+     */
+    slots: Array<Slot>;
+};
+
+export type Booking = {
+    id: Uuid;
+    meetingTypeId: MeetingTypeId;
+    meetingTypeTitle: Name;
+    durationMinutes: DurationMinutes;
+    startsAt: UtcInstant;
+    endsAt: UtcInstant;
+    guestName: Name;
+    guestEmail: GuestEmail;
+    /**
+     * Empty string if no note was supplied.
+     */
+    note: Note;
+    createdAt: UtcInstant;
+};
+
+export type BookingList = {
+    serverNow: UtcInstant;
+    timeZone: 'Asia/Novokuznetsk';
+    /**
+     * All types, endsAt > serverNow, ordered by startsAt then id, without a 14-day limit. In-progress bookings are included. No pagination. Public without authentication; refreshed on opening or manually.
+     */
+    items: Array<Booking>;
+};
+
+export type CreateBooking = {
+    meetingTypeId: MeetingTypeId;
+    /**
+     * A start from the availability grid. The server calculates duration and end from the meeting type and revalidates availability at save time.
+     */
+    startsAt: UtcInstant;
+    guestName: Name;
+    guestEmail: GuestEmail;
+    note?: Note;
+};
+
+/**
+ * Omit id to generate a random UUID. An explicitly empty id and null values are invalid. Omitted description becomes an empty string. Duplicate titles are allowed; the UI warns using the public list.
+ */
+export type CreateMeetingType = {
+    id?: MeetingTypeId;
+    title: Name;
+    description?: Note;
+    durationMinutes: DurationMinutes;
+};
+
+export type DurationMinutes = number;
+
+export type FieldError = {
+    field: string;
+    message: string;
+};
+
+/**
+ * Required email address, trimmed before validation; delivery is not verified.
+ */
+export type GuestEmail = string;
+
 export type Health = {
     status: 'ok';
 };
+
+export type MeetingType = {
+    id: MeetingTypeId;
+    title: Name;
+    description: Note;
+    durationMinutes: DurationMinutes;
+    createdAt: UtcInstant;
+};
+
+/**
+ * Unique across all meeting types. Trim outer whitespace before validation; do not change case.
+ */
+export type MeetingTypeId = string;
+
+export type MeetingTypeList = {
+    /**
+     * All types, ordered by creation time ascending, then id. New types are published immediately.
+     */
+    items: Array<MeetingType>;
+};
+
+/**
+ * Trim outer whitespace before validation; whitespace-only values are invalid.
+ */
+export type Name = string;
+
+/**
+ * Plain text, never interpreted as HTML. Preserve internal whitespace and line breaks.
+ */
+export type Note = string;
+
+export type Slot = {
+    startsAt: UtcInstant;
+    endsAt: UtcInstant;
+};
+
+/**
+ * An absolute instant in UTC, with a Z suffix.
+ */
+export type UtcInstant = string;
+
+export type Uuid = string;
+
+export type ValidationError = {
+    code: 'VALIDATION_ERROR';
+    message: string;
+} & {
+    /**
+     * Present only when errors relate to specific fields, including headers.
+     */
+    fields?: Array<FieldError>;
+};
+
+export type ListBookingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/bookings';
+};
+
+export type ListBookingsErrors = {
+    /**
+     * Server error
+     */
+    500: {
+        code: 'INTERNAL_ERROR';
+        message: string;
+    };
+};
+
+export type ListBookingsError = ListBookingsErrors[keyof ListBookingsErrors];
+
+export type ListBookingsResponses = {
+    /**
+     * The request has succeeded.
+     */
+    200: BookingList;
+};
+
+export type ListBookingsResponse = ListBookingsResponses[keyof ListBookingsResponses];
+
+export type CreateBookingData = {
+    body: CreateBooking;
+    headers: {
+        'Idempotency-Key': Uuid;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/bookings';
+};
+
+export type CreateBookingErrors = {
+    /**
+     * The server could not understand the request due to invalid syntax.
+     */
+    400: ValidationError | {
+        code: 'INVALID_SLOT';
+        message: string;
+    };
+    /**
+     * The server cannot find the requested resource.
+     */
+    404: {
+        code: 'MEETING_TYPE_NOT_FOUND';
+        message: string;
+    };
+    /**
+     * The request conflicts with the current state of the server.
+     */
+    409: {
+        code: 'SLOT_TAKEN' | 'SLOT_EXPIRED' | 'SLOT_OUTSIDE_WINDOW' | 'IDEMPOTENCY_CONFLICT';
+        message: string;
+    };
+    /**
+     * Server error
+     */
+    500: {
+        code: 'INTERNAL_ERROR';
+        message: string;
+    };
+};
+
+export type CreateBookingError = CreateBookingErrors[keyof CreateBookingErrors];
+
+export type CreateBookingResponses = {
+    /**
+     * The request has succeeded.
+     */
+    200: Booking;
+    /**
+     * The request has succeeded and a new resource has been created as a result.
+     */
+    201: Booking;
+};
+
+export type CreateBookingResponse = CreateBookingResponses[keyof CreateBookingResponses];
 
 export type GetHealthData = {
     body?: never;
@@ -23,3 +254,111 @@ export type GetHealthResponses = {
 };
 
 export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses];
+
+export type ListMeetingTypesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/meeting-types';
+};
+
+export type ListMeetingTypesErrors = {
+    /**
+     * Server error
+     */
+    500: {
+        code: 'INTERNAL_ERROR';
+        message: string;
+    };
+};
+
+export type ListMeetingTypesError = ListMeetingTypesErrors[keyof ListMeetingTypesErrors];
+
+export type ListMeetingTypesResponses = {
+    /**
+     * The request has succeeded.
+     */
+    200: MeetingTypeList;
+};
+
+export type ListMeetingTypesResponse = ListMeetingTypesResponses[keyof ListMeetingTypesResponses];
+
+export type CreateMeetingTypeData = {
+    body: CreateMeetingType;
+    path?: never;
+    query?: never;
+    url: '/api/meeting-types';
+};
+
+export type CreateMeetingTypeErrors = {
+    /**
+     * The server could not understand the request due to invalid syntax.
+     */
+    400: ValidationError;
+    /**
+     * The request conflicts with the current state of the server.
+     */
+    409: {
+        code: 'ID_ALREADY_EXISTS';
+        message: string;
+    };
+    /**
+     * Server error
+     */
+    500: {
+        code: 'INTERNAL_ERROR';
+        message: string;
+    };
+};
+
+export type CreateMeetingTypeError = CreateMeetingTypeErrors[keyof CreateMeetingTypeErrors];
+
+export type CreateMeetingTypeResponses = {
+    /**
+     * The request has succeeded and a new resource has been created as a result.
+     */
+    201: MeetingType;
+};
+
+export type CreateMeetingTypeResponse = CreateMeetingTypeResponses[keyof CreateMeetingTypeResponses];
+
+export type GetAvailabilityData = {
+    body?: never;
+    path: {
+        id: MeetingTypeId;
+    };
+    query?: never;
+    url: '/api/meeting-types/{id}/availability';
+};
+
+export type GetAvailabilityErrors = {
+    /**
+     * The server could not understand the request due to invalid syntax.
+     */
+    400: ValidationError;
+    /**
+     * The server cannot find the requested resource.
+     */
+    404: {
+        code: 'MEETING_TYPE_NOT_FOUND';
+        message: string;
+    };
+    /**
+     * Server error
+     */
+    500: {
+        code: 'INTERNAL_ERROR';
+        message: string;
+    };
+};
+
+export type GetAvailabilityError = GetAvailabilityErrors[keyof GetAvailabilityErrors];
+
+export type GetAvailabilityResponses = {
+    /**
+     * The request has succeeded.
+     */
+    200: Availability;
+};
+
+export type GetAvailabilityResponse = GetAvailabilityResponses[keyof GetAvailabilityResponses];

@@ -13,6 +13,10 @@ import {
   Title,
 } from "@mantine/core";
 import "./app.css";
+import { CreateMeetingType } from "./CreateMeetingType.tsx";
+import { Calendar } from "./Calendar.tsx";
+import { UpcomingBookings } from "./UpcomingBookings.tsx";
+import { MeetingTypes } from "./MeetingTypes.tsx";
 
 const steps = [
   {
@@ -31,6 +35,11 @@ const steps = [
 ];
 
 export function App({ pathname }: { pathname: string }) {
+  const meetingTypeId =
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("type");
+  const isUpcoming =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("view") === "bookings";
   const isBooking = pathname === "/booking";
 
   return (
@@ -39,28 +48,25 @@ export function App({ pathname }: { pathname: string }) {
         <Anchor href="/" c="dark" fw={700} underline="never">
           Календарь звонков
         </Anchor>
-        <Text size="sm" c="dimmed">
-          Встречи без лишней переписки
-        </Text>
+        <Anchor href="/admin">Админка</Anchor>
       </Group>
 
       <Box component="main" id="main-content">
-        {isBooking ? (
-          <Stack className="hero" align="flex-start" gap="lg">
-            <Badge variant="light" color="teal" size="lg">
-              Скоро
-            </Badge>
-            <Title order={1} className="hero-title">
-              Запись скоро появится
-            </Title>
-            <Text size="lg" c="dimmed" maw={580}>
-              Мы готовим страницу выбора типа встречи и свободного времени. Пока записаться на
-              встречу через сервис нельзя.
-            </Text>
-            <Button component="a" href="/" color="teal" size="lg" radius="md">
+        {pathname === "/admin" ? (
+          <>
+            <Group component="nav" aria-label="Разделы владельца">
+              <Anchor href="/admin">Создать тип встречи</Anchor>
+              <Anchor href="/admin?view=bookings">Предстоящие встречи</Anchor>
+            </Group>
+            {isUpcoming ? <UpcomingBookings /> : <CreateMeetingType />}
+          </>
+        ) : isBooking ? (
+          <>
+            {meetingTypeId !== null ? <Calendar id={meetingTypeId} /> : <MeetingTypes />}
+            <Button component="a" href="/" color="teal" mb="xl">
               На главную
             </Button>
-          </Stack>
+          </>
         ) : (
           <>
             <Stack className="hero" align="flex-start" gap="lg">
@@ -80,7 +86,7 @@ export function App({ pathname }: { pathname: string }) {
                 Записаться
               </Button>
               <Text size="sm" c="dimmed">
-                Онлайн-запись скоро появится. Пока можно узнать, как устроен сервис.
+                Выберите тип встречи и время, затем подтвердите запись.
               </Text>
             </Stack>
 
