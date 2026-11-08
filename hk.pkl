@@ -7,7 +7,7 @@ steps {
     check = "mise run lint -- {{files}}"
   }
   ["format"] {
-    glob = List("**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.json", "**/*.html", "**/*.yaml", "**/*.yml", "**/*.md")
+    glob = List("**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs", "**/*.json", "**/*.html", "**/*.css", "**/*.yaml", "**/*.yml", "**/*.md")
     exclude = List("generated/**", "dist/**", "node_modules/**", "pnpm-lock.yaml", ".github/workflows/hexlet-check.yml")
     check = "mise run format:check -- {{files}}"
   }

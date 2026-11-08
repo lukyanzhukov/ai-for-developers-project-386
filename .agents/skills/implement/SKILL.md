@@ -8,10 +8,10 @@ Implement the work described by the user in the spec or tickets.
 
 If the user passes a ticket reference, fetch it from the issue tracker and state its title before starting. If the reference is ambiguous, ask.
 
-Call the Skill tool with "tdd" where possible, at pre-agreed seams.
+Before changing code or tests, call the Skill tool with "tdd" where possible and agree the test seams with the user. Reuse seams already confirmed for this task.
 
 Run typechecking regularly, single test files regularly, and the full test suite once at the end.
 
 Once done, call the Skill tool with "code-review" to review the work.
 
-Commit your work to the current branch.
+Finish by presenting the changes, check results, and code-review findings for user review, then stop. Commit and push only when explicitly requested or already authorized for this task.
