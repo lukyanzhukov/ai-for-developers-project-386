@@ -1,0 +1,10 @@
+**
+!Dockerfile
+!package.json
+!pnpm-lock.yaml
+!tsconfig*.json
+!vite.config.*
+!postcss.config.*
+!server/**
+!web/**
+!generated/**
