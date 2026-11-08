@@ -66,8 +66,27 @@ export async function createApp({
   });
   const handlers: Pick<
     RouteHandlers,
-    "getHealth" | "listMeetingTypes" | "createMeetingType" | "getAvailability" | "createBooking"
+    | "getHealth"
+    | "listMeetingTypes"
+    | "createMeetingType"
+    | "getAvailability"
+    | "createBooking"
+    | "listBookings"
   > = {
+    listBookings: async (_request, reply) => {
+      const serverNow = now();
+      return reply.code(200).send({
+        serverNow: serverNow.toISOString(),
+        timeZone,
+        items: bookings
+          .filter((item) => Date.parse(item.endsAt) > serverNow.getTime())
+          .sort(
+            (a, b) =>
+              Date.parse(a.startsAt) - Date.parse(b.startsAt) ||
+              (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+          ),
+      });
+    },
     listMeetingTypes: async (_request, reply) =>
       reply.code(200).send({
         items: meetingTypes.toSorted(
@@ -267,6 +286,12 @@ export async function createApp({
       },
     },
     handlers.createMeetingType,
+  );
+
+  app.get(
+    "/api/bookings",
+    { schema: { response: { 200: { $ref: "contract#/components/schemas/BookingList" } } } },
+    handlers.listBookings,
   );
 
   app.post<{
