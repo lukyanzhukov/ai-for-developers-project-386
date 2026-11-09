@@ -65,6 +65,9 @@ try {
   const list = page.getByRole("list", { name: "Предстоящие встречи", exact: true });
   for (let attempt = 0; attempt < 2; attempt++) {
     if (attempt) await page.reload();
+    await list.getByText(title, { exact: true }).waitFor();
+    assert.equal(await list.getByText(title, { exact: true }).count(), 1);
+    await page.locator("label").filter({ hasText: "Календарь" }).click();
     const nextMonth = page.getByRole("button", { name: "Следующий месяц", exact: true });
     await nextMonth.waitFor();
     const ownerDay = page.getByRole("button", { name: dateName, exact: true });
