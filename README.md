@@ -108,6 +108,8 @@ hk проверяет изменённые файлы перед коммито�
 
 [Публичный сервис](https://call-calendar-386-o6lw.onrender.com).
 
+Если сервис не открывается из РФ, попробуйте VPN: доступность может зависеть от провайдера и маршрута. Причина сетевых таймаутов при проверке не установлена; необходимость VPN — предположение.
+
 ```bash
 docker build -t call-calendar:production .
 docker run --rm --name call-calendar -e PORT=8080 -p 8080:8080 call-calendar:production

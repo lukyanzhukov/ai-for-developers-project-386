@@ -43,6 +43,12 @@ At delivery, report these outcomes separately:
 
 A green CI run, specification approval, and merge permission are evidence for their own stages; none counts as user acceptance. If a ticket requires user acceptance for completion, keep it open until that criterion is met. Otherwise report code completion while explicitly retaining the unperformed acceptance status. A separate acceptance issue is not required.
 
+## Deployment and infrastructure
+
+Every deployment and infrastructure change must have a GitHub issue before execution, including a deployment without code changes. Record the target service/environment, intended commit SHA and verification plan in the issue. Deployment and infrastructure commits must reference that issue in their subject using `(#<issue-number>)`; Conventional Commits validation alone does not enforce this link.
+
+After deployment, record the actual deployed SHA, service URL, health check and `deployment:check` result in the issue. Distinguish successful verification from unavailable checks. Keep deployment authorization and user acceptance separate from automated verification. Existing commit history stays unchanged.
+
 ## Conventions
 
 - **Create an issue**: `gh issue create --title "..." --body "..."`. Use a heredoc for multi-line bodies.
