@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 This skill produces a specification draft from agreed product decisions and codebase context. Synthesize what is already known; do not conduct a new product interview or invent answers to open questions.
 
-Read the project's tracker document's **Workflow and artifacts** section for artifact roles, stage boundaries, and progress/handoff reporting. In this repo it is [docs/agents/issue-tracker.md](../../../docs/agents/issue-tracker.md). If another repo has no configured tracker document, ask the user to run `/setup-matt-pocock-skills`.
+Read the project's tracker document's **Workflow and artifacts** section for optional design readiness, artifact roles, stage boundaries, and progress/handoff reporting. In this repo it is [docs/agents/issue-tracker.md](../../../docs/agents/issue-tracker.md). If another repo has no configured tracker document, ask the user to run `/setup-matt-pocock-skills`.
 
 ## Process
 
@@ -52,7 +52,7 @@ A list of implementation decisions that were made. This can include:
 - API contracts
 - Specific interactions
 
-Do NOT include specific file paths or code snippets. They may end up being outdated very quickly.
+Avoid implementation source-file paths or code snippets: they may become outdated quickly. References to accepted design artifacts belong in the Solution section when the tracker workflow requires them.
 
 Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it within the relevant decision and note briefly that it came from a prototype. Trim to the decision-rich parts, not a working demo, just the important bits.
 

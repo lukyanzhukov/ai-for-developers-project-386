@@ -6,11 +6,12 @@ Product decision maps and implementation tickets live as GitHub issues. Specific
 
 ## Workflow and artifacts
 
-Read this section before preparing a specification, publishing tickets, or implementing a feature. It defines the handoff between `/wayfinder`, `/to-spec`, `/to-tickets`, and `/implement-spec`.
+Read this section during idea exploration/grilling and before preparing a specification, publishing tickets, or implementing a feature. It defines the handoff from product decisions through optional design to `/to-spec`, `/to-tickets`, and `/implement-spec`.
 
 | Stage                     | Artifact and completion condition                                                                                                                                                                                                                                                                              |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Product decisions         | A wayfinding map indexes questions and their agreed answers. Decisions describe the intended behavior; code delivery is outside the map.                                                                                                                                                                       |
+| Idea design (optional)    | When the user opts in during idea exploration/grilling, mockups test the idea's interaction and feasibility before specification preparation. Iterate on feedback until the user explicitly accepts the mockups; record the accepted version and decisions.                                                    |
 | Specification preparation | A draft in the conversation turns agreed decisions into precise behavior, API requirements, and acceptance criteria. The stage ends when the user approves the specification. No separate specification issue is created.                                                                                      |
 | Ticket publication        | Each implementation ticket contains the approved specification of its vertical slice and links to relevant decisions and the API contract. Its title names the delivered behavior, for example “Гость записывается на свободный слот”. An optional parent groups functionality, not specification preparation. |
 | Implementation            | Code and PRs deliver the ticket's behavior; automated checks and review provide evidence against its acceptance criteria.                                                                                                                                                                                      |
@@ -18,7 +19,17 @@ Read this section before preparing a specification, publishing tickets, or imple
 
 Publish `ready-for-agent` tickets only after their product decisions and specifications are agreed. A fully specified ticket may still wait for another implementation ticket; use native dependencies to express that execution order. An unresolved product question belongs in the decision map or specification draft, not in an agent-ready implementation ticket.
 
-Preparation skills end with a reviewable artifact. Start another stage only when the user requested it; an explicit request for several stages authorizes that sequence without repeated permission questions. Approval of requirements does not by itself authorize implementation or publication to `main`.
+### Optional design before specification
+
+During idea exploration/grilling, recommend whether mockups would help validate the idea's interaction and feasibility, explain why briefly, and ask whether the user wants a design stage before the specification. Record the answer with the product decisions and reuse it in later stages. Enable this stage only after an explicit opt-in; a refusal skips it, and an unanswered proposal does not enable it.
+
+When enabled, prepare mockups for the agreed scenarios and relevant interface states using the project's components and technical constraints. Present them for review, revise from feedback, and repeat until the user explicitly accepts a particular version. Record links or artifact paths to that version, the covered screens/states, agreed behavior, and any remaining technical uncertainties. Mockups provide evidence about interaction and feasibility; they do not prove implementation works. Start specification preparation only after design acceptance, within the authorized stage sequence.
+
+The specification must reference the accepted mockups and turn their agreed interactions and states into behavior and acceptance criteria. Resolve conflicts between mockups, product decisions, and technical constraints with the user before specification approval. Each relevant GitHub implementation ticket must carry references to its accepted screens/states and the corresponding requirements, so implementation and review use the same design version. If the design stage was skipped, no mockup artifact is required.
+
+Design acceptance, specification approval, and acceptance of the implemented behavior are separate results. A later change to an accepted design requires review of the affected mockups and updates to the affected specification and tickets within the authorized scope.
+
+Preparation skills end with a reviewable artifact. Start another stage only when the user requested it; an explicit request for several stages authorizes that sequence without repeated permission questions. Required design acceptance and specification approval still need the user's actual response before proceeding. Approval of requirements does not by itself authorize implementation or publication to `main`.
 
 ### Progress and handoff
 

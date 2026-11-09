@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Turn an approved specification into **implementation tickets**: tracer-bullet vertical slices, each containing the specification for its behavior and declaring the tickets that **block** it.
 
-Read the project's tracker document's **Workflow and artifacts** section before publication; it defines artifact roles, readiness, and progress/handoff reporting. In this repo it is [docs/agents/issue-tracker.md](../../../docs/agents/issue-tracker.md). If no tracker has been configured, ask the user to run `/setup-matt-pocock-skills`.
+Read the project's tracker document's **Workflow and artifacts** section before publication; it defines artifact roles, readiness, design references, and progress/handoff reporting. In this repo it is [docs/agents/issue-tracker.md](../../../docs/agents/issue-tracker.md). If no tracker has been configured, ask the user to run `/setup-matt-pocock-skills`.
 
 ## Process
 
@@ -117,4 +117,4 @@ The short scenario and expected result. Status: not performed.
 
 </issue-template>
 
-In either form, avoid specific file paths or code snippets: they go stale fast. Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it and note briefly that it came from a prototype. Trim to the decision-rich parts, not a working demo, just the important bits.
+In either form, avoid implementation source-file paths or code snippets: they go stale fast. References to accepted design artifacts belong in the Specification when the tracker workflow requires them. Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it and note briefly that it came from a prototype. Trim to the decision-rich parts, not a working demo, just the important bits.
