@@ -555,10 +555,6 @@ h3 {
 .upcoming-page {
   padding-top: 8px;
 }
-.upcoming-page > ul > li {
-  border-color: var(--line);
-  border-left: 3px solid #c7b38e;
-}
 @media (max-width: 1000px) {
   .booking-panel {
     grid-template-columns: minmax(0, 1.3fr) minmax(200px, 0.9fr);
@@ -879,9 +875,6 @@ h3 {
 .owner-agenda > h3 {
   text-transform: capitalize;
 }
-.owner-agenda li {
-  padding: 16px;
-}
 .owner-agenda h2 {
   font-size: 18px;
 }
@@ -964,4 +957,70 @@ h3 {
 }
 .owner-agenda > h3::first-letter {
   text-transform: uppercase;
+}
+
+.owner-view-toggle {
+  background: #eeece6;
+  padding: 4px;
+  border: 1px solid #e5e1d8;
+}
+.owner-view-toggle .mantine-SegmentedControl-indicator {
+  box-shadow: none;
+  background: #34332f;
+}
+.owner-view-toggle .mantine-SegmentedControl-label {
+  color: #706b62;
+  padding: 10px 15px;
+  font-size: 13px;
+  font-weight: 550;
+}
+.owner-view-toggle .mantine-SegmentedControl-label[data-active] {
+  color: #fffdf8;
+}
+.owner-view-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.owner-view-label svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.owner-date-heading {
+  margin: 16px 0 12px;
+}
+.owner-date-heading h3::first-letter {
+  text-transform: uppercase;
+}
+.owner-list li:first-child .owner-date-heading {
+  margin-top: 0;
+}
+.owner-booking-card {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 16px;
+  border-color: var(--line);
+  overflow-wrap: anywhere;
+}
+.owner-booking-time {
+  padding-top: 2px;
+}
+.owner-agenda .owner-booking-card {
+  grid-template-columns: 1fr;
+  gap: 10px;
+  padding: 16px;
+}
+@media (max-width: 700px) {
+  .owner-booking-card {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 18px;
+  }
 }
