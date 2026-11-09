@@ -14,6 +14,7 @@ import "./app.css";
 import { CreateMeetingType } from "./CreateMeetingType.tsx";
 import { Calendar } from "./Calendar.tsx";
 import { UpcomingBookings } from "./UpcomingBookings.tsx";
+import { UpcomingBookingsPrototype } from "./UpcomingBookings.prototype.tsx";
 
 export function App({ pathname }: { pathname: string }) {
   const params =
@@ -76,7 +77,15 @@ export function App({ pathname }: { pathname: string }) {
               </div>
             </aside>
             <div className="admin-content">
-              {isUpcoming ? <UpcomingBookings /> : <CreateMeetingType />}
+              {isUpcoming ? (
+                import.meta.env.DEV && params.has("prototype") ? (
+                  <UpcomingBookingsPrototype />
+                ) : (
+                  <UpcomingBookings />
+                )
+              ) : (
+                <CreateMeetingType />
+              )}
             </div>
           </div>
         ) : isBooking ? (

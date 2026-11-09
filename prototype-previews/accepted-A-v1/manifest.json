@@ -1,0 +1,17 @@
+{
+  "version": "A-v1",
+  "acceptedOn": "2026-11-09",
+  "status": "design accepted; specification pending",
+  "decisions": [
+    "Cards grouped by date",
+    "List is the initial mode",
+    "List / Calendar switch with icons and dark active pill",
+    "Date selection preserved while switching modes"
+  ],
+  "files": {
+    "UpcomingBookings.prototype.tsx": "c5e0ef5ef9b0a83fbb3ffb491f480ff1f6c849bacb5d4cfe50716a12f5d673a9",
+    "UpcomingBookings.prototype.css": "f7f77c3ba774faa52599fae513ebd593261186cdd48b2727e75e35d24b57640d",
+    "revised-A-1280.png": "258149fc83ea1f21de4d4c6a1cb487148cade66505f6e36b7820263c411d4780",
+    "revised-A-390.png": "cae36f3850b232480b2dd4ad1f111221849d8c430a160d0de715fece5781a341"
+  }
+}

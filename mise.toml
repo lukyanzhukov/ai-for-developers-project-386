@@ -41,6 +41,10 @@ run = "node scripts/generate.mjs --check"
 [tasks.dev]
 run = "mise daemons start api web"
 
+[tasks.prototype]
+description = "Run the throwaway owner meetings UI prototype (synthetic data, no API needed)"
+run = "pnpm exec vite --port 5174"
+
 [tasks.stop]
 run = "mise daemons stop api web"
 
