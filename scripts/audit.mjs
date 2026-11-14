@@ -240,6 +240,9 @@ async function runAgent(prompt, model) {
       "--print-logs",
       "--log-level",
       "INFO",
+      "--no-auto",
+      "--no-yolo",
+      "--no-dangerously-skip-permissions",
     ],
     {
       cwd,
@@ -253,7 +256,9 @@ async function runAgent(prompt, model) {
           small_model: model,
           agent: { plan: { steps: 5 }, title: { disable: true } },
         }),
-        OPENCODE_PERMISSION: JSON.stringify({ "*": "deny" }),
+        // The free provider rejects tool-stripped requests. Keep approval-gated
+        // tools visible; pinned non-interactive CLI rejects every approval.
+        OPENCODE_PERMISSION: JSON.stringify({ "*": "deny", bash: "ask", read: "ask" }),
       },
     },
   );
