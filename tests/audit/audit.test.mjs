@@ -739,6 +739,76 @@ test("manual OSV reports do not gain comments when agent wording changes", async
   }
 });
 
+for (const failure of ["stderr", "jsonl"])
+  test(`fatal ${failure} diagnostics stop a hanging agent and its descendants promptly`, () => {
+    const dir = mkdtempSync(join(tmpdir(), "audit-test-"));
+    try {
+      const agent = join(dir, "agent");
+      writeFileSync(
+        agent,
+        `#!${process.execPath}
+const fs = require('node:fs');
+const { spawn } = require('node:child_process');
+fs.readFileSync(0, 'utf8');
+const descendant = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)']);
+fs.writeFileSync('descendant.pid', String(descendant.pid));
+process.stdout.write('{"type":"step_start","credential":"fixture-');
+process.stderr.write('INFO credential=fixture-');
+setTimeout(() => {
+  process.stdout.write('credential"}\\n');
+  process.stderr.write('credential\\nAuthorization: Bearer unknown-header-secret\\n');
+}, 20);
+setTimeout(() => {
+  ${failure === "stderr" ? "process.stderr.write('ERROR provider stream error: Free usage limit reached\\n');" : "process.stdout.write(JSON.stringify({type:'error',error:{name:'ProviderError',data:{message:'upstream failed'}}}));"}
+}, 100);
+setInterval(() => {}, 1000);
+`,
+        { mode: 0o755 },
+      );
+      writeFileSync(
+        join(dir, "input.json"),
+        JSON.stringify({
+          schema: 1,
+          kind: "todo",
+          repository: "owner/repo",
+          sha: "a".repeat(40),
+          candidates: [
+            { id: "fatal", path: "app.ts", line: 1, text: "// TODO fix", context: "pending" },
+          ],
+        }),
+      );
+      const started = Date.now();
+      const run = spawnSync(process.execPath, [cli, "analyze", "todo", dir], {
+        encoding: "utf8",
+        env: {
+          OPENCODE_BIN: agent,
+          GITHUB_REPOSITORY: "owner/repo",
+          OPENCODE_API_KEY: "fixture-credential",
+        },
+      });
+      assert.ok(Date.now() - started < 3000, "provider failure must not wait for agent timeout");
+      assert.equal(run.status, 1, run.stderr);
+      const diagnostic = readFileSync(join(dir, "agent.stderr"), "utf8");
+      if (failure === "stderr") assert.match(diagnostic, /Free usage limit reached/);
+      else assert.match(readFileSync(join(dir, "agent.jsonl"), "utf8"), /ProviderError/);
+      assert.doesNotMatch(diagnostic, /fixture-credential|unknown-header-secret/);
+      assert.match(diagnostic, /<REDACTED>/);
+      assert.doesNotMatch(readFileSync(join(dir, "agent.jsonl"), "utf8"), /fixture-credential/);
+      assert.match(
+        JSON.parse(readFileSync(join(dir, "agent-status.json"))).error,
+        failure === "stderr" ? /provider/i : /error event/i,
+      );
+      const pid = Number(readFileSync(join(dir, "descendant.pid"), "utf8"));
+      const state = spawnSync("ps", ["-p", String(pid), "-o", "stat="], { encoding: "utf8" });
+      assert.ok(
+        state.status === 1 || /^Z/.test(state.stdout.trim()),
+        "descendant must have exited",
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
 test("agent receives large snapshots through stdin with bounded argv", () => {
   const dir = mkdtempSync(join(tmpdir(), "audit-test-"));
   try {
@@ -748,6 +818,11 @@ test("agent receives large snapshots through stdin with bounded argv", () => {
       `#!${process.execPath}
 const fs = require('node:fs');
 const input = fs.readFileSync(0, 'utf8');
+const directory = process.argv[process.argv.indexOf('--dir') + 1];
+if (directory !== process.cwd() || directory !== process.env.PWD || !require('node:path').isAbsolute(directory)) process.exit(4);
+if (!process.argv.includes('--print-logs') || process.argv[process.argv.indexOf('--log-level') + 1] !== 'INFO') process.exit(5);
+const config = JSON.parse(process.env.OPENCODE_CONFIG_CONTENT);
+if (config.model !== 'opencode/big-pickle' || config.small_model !== config.model || !config.agent.title.disable) process.exit(6);
 if (process.argv.join(' ').length > 1000 || input.length < 256 * 1024) process.exit(2);
 const snapshot = JSON.parse(input.split('Snapshot:\\n')[1]);
 if (snapshot.candidates[0].context.length !== 300000) process.exit(3);
