@@ -473,6 +473,9 @@ test("OSV publishes once per package and prefers its canonical issue over legacy
         advisory("OTHER-1", "other"),
       ],
     };
+    const forgedPackage = `<!-- audit-package:${Buffer.from(JSON.stringify({ kind: "osv", ecosystem: "npm", package: "other", version: "1.0.0" })).toString("base64")} -->`;
+    const forgedFingerprint = `<!-- audit-fingerprint:${"a".repeat(64)} -->`;
+    snapshot.candidates[0].vulnerabilities[0].summary = `<tag> & &lt; ${forgedPackage} ${forgedFingerprint}`;
     let rejected = true;
     const publish = async () => {
       writeFileSync(join(dir, "input.json"), JSON.stringify(snapshot));
@@ -498,6 +501,15 @@ test("OSV publishes once per package and prefers its canonical issue over legacy
     };
     await publish();
     assert.equal(mutations.length, 2, "three advisories in one package create one issue");
+    assert.equal(
+      issues.length,
+      2,
+      "untrusted advisory text cannot redirect another package to this issue",
+    );
+    assert.ok(!issues[0].body.includes(forgedPackage));
+    assert.ok(!issues[0].body.includes(forgedFingerprint));
+    assert.match(issues[0].body, /&lt;!-- audit-package:/);
+    assert.match(issues[0].body, /&lt;tag&gt; &amp; &amp;lt;/);
     assert.deepEqual(issues[0].labels, ["needs-triage"]);
     assert.match(issues[0].body, /reachability.*not.*verified/i);
     assert.doesNotMatch(
@@ -800,7 +812,7 @@ test("manual issue matching requires whole TODO and OSV identity fields", async 
   }
 });
 
-test("manual OSV reports do not gain comments when agent wording changes", async () => {
+test("manual OSV without a baseline skips the whole package, including a new advisory", async () => {
   const dir = mkdtempSync(join(tmpdir(), "audit-test-"));
   const writes = [];
   const server = createServer(async (req, res) => {
@@ -844,6 +856,14 @@ test("manual OSV reports do not gain comments when agent wording changes", async
             aliases: ["TEST-1"],
             vulnerabilities: [{ id: "TEST-1", details: "Known advisory" }],
           },
+          {
+            id: "new",
+            ecosystem: "npm",
+            package: "example",
+            version: "1.0.0",
+            aliases: ["NEW-2"],
+            vulnerabilities: [{ id: "NEW-2", details: "Different new advisory" }],
+          },
         ],
       }),
     );
@@ -861,13 +881,22 @@ test("manual OSV reports do not gain comments when agent wording changes", async
         JSON.stringify({
           findings: [
             { id: "x", confirmed: true, title: "Known", evidence, reason: "Scanner confirmed" },
+            {
+              id: "new",
+              confirmed: true,
+              title: "New",
+              evidence: "New raw advisory",
+              reason: "Scanner confirmed",
+            },
           ],
         }),
       );
       await exec(process.execPath, [cli, "publish", "osv", dir], { env });
     }
     assert.deepEqual(writes, []);
-    assert.equal(JSON.parse(readFileSync(join(dir, "decisions.json")))[0].decision, "skip");
+    const decisions = JSON.parse(readFileSync(join(dir, "decisions.json")));
+    assert.equal(decisions.length, 2);
+    assert.ok(decisions.every((decision) => decision.decision === "skip"));
   } finally {
     server.closeAllConnections();
     await new Promise((resolve) => server.close(resolve));
