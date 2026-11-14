@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.2.0](https://github.com/lukyanzhukov/ai-for-developers-project-386/compare/v1.1.0...v1.2.0) (2026-11-14)
+
+
+### Features
+
+* add independent scheduled source and lockfile audits ([#32](https://github.com/lukyanzhukov/ai-for-developers-project-386/issues/32)) ([2a7c81b](https://github.com/lukyanzhukov/ai-for-developers-project-386/commit/2a7c81b172fb6bc8c806b40b3e5f0a25da8f94d6))
+* **ci:** независимые аудиты TODO/FIXME и lockfile ([#32](https://github.com/lukyanzhukov/ai-for-developers-project-386/issues/32)) ([1e0d7d0](https://github.com/lukyanzhukov/ai-for-developers-project-386/commit/1e0d7d053556ff688ecb9fb025f357184e2383d4))
+
+
+### Bug Fixes
+
+* allow manual free audit model selection ([#32](https://github.com/lukyanzhukov/ai-for-developers-project-386/issues/32)) ([12a1d12](https://github.com/lukyanzhukov/ai-for-developers-project-386/commit/12a1d120c9b60967ce33f549e664dddb46ed9a49))
+* **ci:** bound PR review context and pin helper model ([#29](https://github.com/lukyanzhukov/ai-for-developers-project-386/issues/29)) ([9a132ec](https://github.com/lukyanzhukov/ai-for-developers-project-386/commit/9a132ec8015e95614aaa269a8f47c596a6586da9))
+* **ci:** cap review iterations and disable web tools ([#29](https://github.com/lukyanzhukov/ai-for-developers-project-386/issues/29)) ([f66b94c](https://github.com/lukyanzhukov/ai-for-developers-project-386/commit/f66b94c590ceb9491ed1809f6e90c4c7d1987cef))
+* **ci:** keep expiry exercise independent of model quota ([#32](https://github.com/lukyanzhukov/ai-for-developers-project-386/issues/32)) ([81f191f](https://github.com/lukyanzhukov/ai-for-developers-project-386/commit/81f191fb2f6e024a7903bd94e44f2d6e2c68675b))
+* **ci:** pin free helper model in all OpenCode workflows ([#30](https://github.com/lukyanzhukov/ai-for-developers-project-386/issues/30)) ([1b35815](https://github.com/lukyanzhukov/ai-for-developers-project-386/commit/1b3581581962a9f6e310b2a18786423842f3acb8))
+* **ci:** preserve safe tool approvals for free-model compatibility ([#32](https://github.com/lukyanzhukov/ai-for-developers-project-386/issues/32)) ([b9261a3](https://github.com/lukyanzhukov/ai-for-developers-project-386/commit/b9261a30b47b228091b108a31e6adcea4e011f2b))
+* **ci:** диагностика и завершение зависших агентов аудита ([#32](https://github.com/lukyanzhukov/ai-for-developers-project-386/issues/32)) ([1a8edd5](https://github.com/lukyanzhukov/ai-for-developers-project-386/commit/1a8edd5f27db3c4e51849bd9d91c67c02d3d0be1))
+* **ci:** совместимость бесплатных моделей с read-only аудитами ([#32](https://github.com/lukyanzhukov/ai-for-developers-project-386/issues/32)) ([9592415](https://github.com/lukyanzhukov/ai-for-developers-project-386/commit/9592415856b00216018b083cdccc3cc5bc71e726))
+* preserve audit evidence and replay provenance ([#32](https://github.com/lukyanzhukov/ai-for-developers-project-386/issues/32)) ([fb6151d](https://github.com/lukyanzhukov/ai-for-developers-project-386/commit/fb6151dc0fd9616fd33f768db1981e597e76d56b))
+* stop audit agents on provider errors ([#32](https://github.com/lukyanzhukov/ai-for-developers-project-386/issues/32)) ([0a71fd1](https://github.com/lukyanzhukov/ai-for-developers-project-386/commit/0a71fd1c2bccaabdae6389d23bf41d64284cb38b))
+* **test:** isolate audit fixtures from hook Git environment ([#32](https://github.com/lukyanzhukov/ai-for-developers-project-386/issues/32)) ([1c85ccf](https://github.com/lukyanzhukov/ai-for-developers-project-386/commit/1c85ccff7edc9a7fbb5a17fab279d93be77e1de7))
+* **test:** изолировать Git-окружение тестов аудита ([#32](https://github.com/lukyanzhukov/ai-for-developers-project-386/issues/32)) ([17860c6](https://github.com/lukyanzhukov/ai-for-developers-project-386/commit/17860c6b2ac288418f699e032292632e8b25fb9b))
+
 ## [1.1.0](https://github.com/lukyanzhukov/ai-for-developers-project-386/compare/v1.0.0...v1.1.0) (2026-11-09)
 
 ### Features
