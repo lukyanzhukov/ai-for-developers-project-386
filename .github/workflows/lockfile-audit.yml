@@ -5,6 +5,14 @@ on:
     - cron: "37 1 * * *"
   workflow_dispatch:
     inputs:
+      model:
+        description: Free model for this manual run (no automatic fallback)
+        type: choice
+        required: false
+        default: opencode/big-pickle
+        options:
+          - opencode/big-pickle
+          - opencode/mimo-v2.6-flash-free
       source_run_id:
         description: Replay this workflow's input snapshot from a completed main run
         type: string
@@ -68,14 +76,15 @@ jobs:
           path: ${{ runner.temp }}/audit/input.json
           retention-days: 30
           if-no-files-found: warn
+      - name: Exercise ignoreUntil outside the working project
+        if: inputs.exercise_ignore_until && inputs.source_run_id == ''
+        run: node scripts/osv-ignore-lab.mjs --scanner "$RUNNER_TEMP/osv-scanner" --output "$RUNNER_TEMP/audit/ignore-until-lab"
       - name: Analyze read-only snapshot
         id: analyze
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          AUDIT_MODEL: ${{ inputs.model || 'opencode/big-pickle' }}
         run: mise exec opencode@1.19.5 -- node scripts/audit.mjs analyze osv "$RUNNER_TEMP/audit"
-      - name: Exercise ignoreUntil outside the working project
-        if: inputs.exercise_ignore_until && inputs.source_run_id == ''
-        run: node scripts/osv-ignore-lab.mjs --scanner "$RUNNER_TEMP/osv-scanner" --output "$RUNNER_TEMP/audit/ignore-until-lab"
       - name: Report final audit status
         run: node scripts/audit.mjs status osv "$RUNNER_TEMP/audit"
       - name: Write Actions summary
