@@ -34,5 +34,6 @@ jobs:
         uses: anomalyco/opencode/github@810c0eba1a7348036f8bdf61e6632d0c36c6876c # v1.19.5
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          OPENCODE_CONFIG_CONTENT: '{"model":"opencode/big-pickle","small_model":"opencode/big-pickle","agent":{"title":{"disable":true}}}'
         with:
           model: opencode/big-pickle
