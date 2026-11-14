@@ -147,8 +147,13 @@ DEPLOYMENT_URL=https://call-calendar-386-o6lw.onrender.com mise run deployment:c
 Asia/Novokuznetsk**. Запуски одного аудита сериализованы без отмены предыдущего;
 разные аудиты друг друга не ждут. Расписание GitHub может запускаться с задержкой.
 
-OpenCode **1.19.5** использует бесплатную `opencode/big-pickle` для `model` и
-`small_model`, генерация заголовка отключена. Нужен repository secret
+OpenCode **1.19.5** по умолчанию использует бесплатную `opencode/big-pickle` для
+`model` и `small_model`, генерация заголовка отключена. При ручном запуске input
+`model` позволяет выбрать `opencode/mimo-v2.6-flash-free`; другие ID скрипт
+отклоняет до запуска агента. Выбранная модель фиксируется в `agent-status.json`.
+Автоматических повторов с другой моделью нет. Бесплатная квота определяется
+провайдером: её исчерпание означает ошибку анализа, а не успешный аудит.
+Нужен repository secret
 `OPENCODE_API_KEY`. Агент получает снимок как недоверенные данные; инструменты,
 изменения файлов и исполнение команд запрещены. У job анализа только
 `contents:read`, `issues:read`, `actions:read`; `issues:write` есть только у
@@ -199,6 +204,9 @@ Markdown и сырую диагностику; `*-audit-publication` — реш�
 ```bash
 gh workflow run todo-audit.yml --ref main
 gh workflow run lockfile-audit.yml --ref main
+# Ручной выбор другой разрешённой бесплатной модели
+gh workflow run todo-audit.yml --ref main -f model=opencode/mimo-v2.6-flash-free
+gh workflow run lockfile-audit.yml --ref main -f model=opencode/mimo-v2.6-flash-free
 ```
 
 Для повторной обработки сохранённого снимка укажите ID завершённого запуска
@@ -206,7 +214,7 @@ gh workflow run lockfile-audit.yml --ref main
 
 ```bash
 gh workflow run todo-audit.yml --ref main -f source_run_id=123456789
-gh workflow run lockfile-audit.yml --ref main -f source_run_id=123456790
+gh workflow run lockfile-audit.yml --ref main -f source_run_id=123456790 -f model=opencode/mimo-v2.6-flash-free
 ```
 
 Replay сохраняет в снимке `originRunId` исходного запуска отдельно от текущего

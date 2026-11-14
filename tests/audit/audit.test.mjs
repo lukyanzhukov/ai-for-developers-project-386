@@ -809,6 +809,59 @@ setInterval(() => {}, 1000);
     }
   });
 
+test("manual free model selection reaches argv and config, while paid IDs never spawn", () => {
+  const dir = mkdtempSync(join(tmpdir(), "audit-test-"));
+  try {
+    const agent = join(dir, "agent");
+    writeFileSync(
+      agent,
+      `#!${process.execPath}
+const fs = require('node:fs');
+fs.readFileSync(0, 'utf8');
+fs.writeFileSync('spawned', 'yes');
+const model = 'opencode/mimo-v2.6-flash-free';
+const config = JSON.parse(process.env.OPENCODE_CONFIG_CONTENT);
+if (process.argv[process.argv.indexOf('--model') + 1] !== model || config.model !== model || config.small_model !== model || !config.agent.title.disable) process.exit(2);
+console.log(JSON.stringify({type:'text',part:{text:JSON.stringify({findings:[{id:'choice',confirmed:false,reason:'No concrete unfinished behavior'}]})}}));
+`,
+      { mode: 0o755 },
+    );
+    writeFileSync(
+      join(dir, "input.json"),
+      JSON.stringify({
+        schema: 1,
+        kind: "todo",
+        repository: "owner/repo",
+        sha: "a".repeat(40),
+        candidates: [
+          { id: "choice", path: "app.ts", line: 1, text: "// TODO fix", context: "pending" },
+        ],
+      }),
+    );
+    const env = {
+      GITHUB_REPOSITORY: "owner/repo",
+      OPENCODE_BIN: agent,
+      AUDIT_MODEL: "opencode/mimo-v2.6-flash-free",
+    };
+    const selected = spawnSync(process.execPath, [cli, "analyze", "todo", dir], {
+      env,
+      encoding: "utf8",
+    });
+    assert.equal(selected.status, 0, readFileSync(join(dir, "report.md"), "utf8"));
+    assert.equal(JSON.parse(readFileSync(join(dir, "agent-status.json"))).model, env.AUDIT_MODEL);
+    rmSync(join(dir, "spawned"));
+    const rejected = spawnSync(process.execPath, [cli, "analyze", "todo", dir], {
+      env: { ...env, AUDIT_MODEL: "opencode/claude-opus-4-6" },
+      encoding: "utf8",
+    });
+    assert.equal(rejected.status, 1);
+    assert.match(readFileSync(join(dir, "error.json"), "utf8"), /Unsupported audit model/);
+    assert.throws(() => readFileSync(join(dir, "spawned")), { code: "ENOENT" });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("agent receives large snapshots through stdin with bounded argv", () => {
   const dir = mkdtempSync(join(tmpdir(), "audit-test-"));
   try {

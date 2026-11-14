@@ -5,6 +5,14 @@ on:
     - cron: "37 1 * * *"
   workflow_dispatch:
     inputs:
+      model:
+        description: Free model for this manual run (no automatic fallback)
+        type: choice
+        required: false
+        default: opencode/big-pickle
+        options:
+          - opencode/big-pickle
+          - opencode/mimo-v2.6-flash-free
       source_run_id:
         description: Replay this workflow's input snapshot from a completed main run
         type: string
@@ -72,6 +80,7 @@ jobs:
         id: analyze
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          AUDIT_MODEL: ${{ inputs.model || 'opencode/big-pickle' }}
         run: mise exec opencode@1.19.5 -- node scripts/audit.mjs analyze osv "$RUNNER_TEMP/audit"
       - name: Exercise ignoreUntil outside the working project
         if: inputs.exercise_ignore_until && inputs.source_run_id == ''
