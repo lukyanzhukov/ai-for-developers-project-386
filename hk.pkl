@@ -12,7 +12,7 @@ steps {
     check = "mise run format:check -- {{files}}"
   }
   ["workflow"] {
-    glob = List(".github/workflows/ci.yml", ".github/workflows/release-please.yml")
+    glob = List(".github/workflows/ci.yml", ".github/workflows/release-please.yml", ".github/workflows/opencode.yml")
     check = "jactionlint {{files}}"
   }
 }

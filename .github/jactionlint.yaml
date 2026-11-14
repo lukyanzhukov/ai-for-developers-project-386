@@ -1,0 +1,5 @@
+ignores:
+  - rule: dangerous-triggers
+    file: ".github/workflows/opencode.yml"
+    reason: "Required for /oc and /opencode comment triggers (OpenCode GitHub integration); restricted to comments by lukyanzhukov, mention-gated, minimal permissions, pinned actions, timeout, per-issue concurrency."
+    expires: "2027-02-15"
