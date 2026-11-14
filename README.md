@@ -97,6 +97,12 @@ mise run fix            # автоисправления и форматиров
 hk проверяет изменённые файлы перед коммитом, commitlint — сообщение коммита, полный `check` выполняется перед push и в CI. Формат сообщений — Conventional Commits, например `feat: запись на свободный слот (#12)`.
 Учебный `.github/workflows/hexlet-check.yml` и имя репозитория сохраняйте без изменений.
 
+### ИИ-ревью PR
+
+Workflow `.github/workflows/opencode-pr-review.yml` запускает OpenCode для открытых PR из этого репозитория от владельца или `opencode-agent[bot]`, кроме draft. Для работы нужен Actions secret `OPENCODE_API_KEY`; комментарий публикуется через встроенный `GITHUB_TOKEN`.
+
+Критерии и формат ревью описаны в [REVIEW.md](REVIEW.md). Workflow уже передаёт агенту указание прочитать этот файл вместе с `AGENTS.md`. Результат появляется комментарием в PR; автоматическое ревью не заменяет проверки CI и пользовательскую приёмку.
+
 ### Выпуски
 
 После push в `main` workflow `release-please.yml` готовит release-PR с версией и `CHANGELOG.md`. После его слияния создаёт тег и GitHub Release. Публикации в npm и деплоя в этом workflow нет.
