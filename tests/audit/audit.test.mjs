@@ -415,6 +415,142 @@ test("OSV aliases identify one issue and identical replay never writes again", a
   }
 });
 
+test("OSV publishes once per package and prefers its canonical issue over legacy advisories", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "audit-test-"));
+  const issues = [];
+  const comments = new Map();
+  const mutations = [];
+  const server = createServer(async (req, res) => {
+    res.setHeader("content-type", "application/json");
+    const commentNumber = /issues\/(\d+)\/comments/.exec(req.url)?.[1];
+    if (req.method === "POST") {
+      let raw = "";
+      for await (const part of req) raw += part;
+      const value = JSON.parse(raw);
+      mutations.push({ path: req.url, ...value });
+      if (commentNumber) {
+        const history = comments.get(commentNumber) || [];
+        history.push(value);
+        comments.set(commentNumber, history);
+        res.end(
+          JSON.stringify({
+            html_url: `https://github.com/owner/repo/issues/${commentNumber}#comment`,
+          }),
+        );
+      } else {
+        const issue = {
+          ...value,
+          number: issues.length + 1,
+          state: "open",
+          html_url: `https://github.com/owner/repo/issues/${issues.length + 1}`,
+        };
+        issues.push(issue);
+        res.end(JSON.stringify(issue));
+      }
+    } else res.end(JSON.stringify(commentNumber ? comments.get(commentNumber) || [] : issues));
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    const advisory = (id, pkg = "example") => ({
+      id,
+      ecosystem: "npm",
+      package: pkg,
+      version: "1.0.0",
+      aliases: [id],
+      vulnerabilities: [
+        { id, summary: `Potential condition ${id}`, details: "RAW_DETAILS_STAY_IN_ARTIFACTS" },
+      ],
+    });
+    const snapshot = {
+      schema: 1,
+      kind: "osv",
+      repository: "owner/repo",
+      sha: "b".repeat(40),
+      candidates: [
+        advisory("TEST-1"),
+        advisory("TEST-2"),
+        advisory("TEST-3"),
+        advisory("OTHER-1", "other"),
+      ],
+    };
+    let rejected = true;
+    const publish = async () => {
+      writeFileSync(join(dir, "input.json"), JSON.stringify(snapshot));
+      writeFileSync(
+        join(dir, "result.json"),
+        JSON.stringify({
+          findings: snapshot.candidates.map((c) => ({
+            id: c.id,
+            confirmed: !(rejected && c.id === "TEST-2"),
+            title: "Model wording",
+            evidence: "Production exploitable according to model",
+            reason:
+              rejected && c.id === "TEST-2" ? "Unsupported reachability" : "Model wording changed",
+          })),
+        }),
+      );
+      await exec(process.execPath, [cli, "publish", "osv", dir], {
+        env: {
+          GITHUB_REPOSITORY: "owner/repo",
+          GITHUB_API_URL: `http://127.0.0.1:${server.address().port}`,
+        },
+      });
+    };
+    await publish();
+    assert.equal(mutations.length, 2, "three advisories in one package create one issue");
+    assert.deepEqual(issues[0].labels, ["needs-triage"]);
+    assert.match(issues[0].body, /reachability.*not.*verified/i);
+    assert.doesNotMatch(
+      issues[0].body,
+      /RAW_DETAILS_STAY_IN_ARTIFACTS|Production exploitable according to model/,
+    );
+    const marker = /<!-- audit-package:([A-Za-z0-9+/=]+) -->/.exec(issues[0].body);
+    assert.deepEqual(JSON.parse(Buffer.from(marker[1], "base64")), {
+      kind: "osv",
+      ecosystem: "npm",
+      package: "example",
+      version: "1.0.0",
+    });
+    rejected = false;
+    await publish();
+    assert.equal(mutations.length, 2, "raw facts are stable when the model rejects an advisory");
+    rejected = true;
+    const canonical = issues[0];
+    const legacyBody = canonical.body.replace(/<!-- audit-package:[^>]+ -->/g, "");
+    issues.unshift(
+      ...Array.from({ length: 29 }, (_, index) => ({
+        number: 100 + index,
+        state: "closed",
+        title: "Legacy",
+        body: legacyBody,
+        html_url: `https://github.com/owner/repo/issues/${100 + index}`,
+      })),
+    );
+    issues.unshift({
+      ...canonical,
+      number: 99,
+      state: "closed",
+      html_url: "https://github.com/owner/repo/issues/99",
+    });
+    await publish();
+    assert.equal(mutations.length, 2, "all existing raw advisory markers skip without mutation");
+    snapshot.candidates.push(advisory("TEST-4"));
+    await publish();
+    assert.equal(mutations.length, 3);
+    assert.equal(mutations[2].path, `/repos/owner/repo/issues/${canonical.number}/comments`);
+    await publish();
+    assert.equal(mutations.length, 3, "the same new advisory does not add another comment");
+    const decisions = JSON.parse(readFileSync(join(dir, "decisions.json")));
+    assert.equal(decisions.length, 5);
+    assert.ok(decisions.every((d) => d.decision === "skip"));
+    assert.equal(decisions.find((d) => d.id === "TEST-2").reason, "Unsupported reachability");
+  } finally {
+    server.closeAllConnections();
+    await new Promise((resolve) => server.close(resolve));
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("empty snapshot produces JSON and Markdown without invoking agent", () => {
   const dir = mkdtempSync(join(tmpdir(), "audit-test-"));
   try {

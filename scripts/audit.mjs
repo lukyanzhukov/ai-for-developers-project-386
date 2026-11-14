@@ -510,6 +510,139 @@ function matches(text, candidate) {
         field(candidate.version) &&
         candidate.aliases.some(field);
 }
+function packageIdentity(candidate) {
+  return {
+    kind: "osv",
+    ecosystem: candidate.ecosystem,
+    package: candidate.package,
+    version: candidate.version,
+  };
+}
+function packageMatches(text, candidate) {
+  for (const match of text.matchAll(/<!-- audit-package:([A-Za-z0-9+/=]+) -->/g)) {
+    try {
+      const marker = JSON.parse(Buffer.from(match[1], "base64").toString());
+      const expected = packageIdentity(candidate);
+      if (Object.keys(expected).every((key) => marker[key] === expected[key])) return true;
+    } catch {
+      /* Ignore malformed markers. */
+    }
+  }
+  return false;
+}
+const identityMarker = (candidate) =>
+  `<!-- audit-identity:${Buffer.from(JSON.stringify(identity(candidate))).toString("base64")} -->`;
+async function publishOsv(input, result, issues, root) {
+  const groups = new Map();
+  for (const candidate of input.candidates) {
+    const key = JSON.stringify(packageIdentity(candidate));
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(candidate);
+  }
+  const decisions = [];
+  write("decisions.json", decisions);
+  const order = (a, b) =>
+    Number(b.state === "open") - Number(a.state === "open") || a.number - b.number;
+  for (const candidates of groups.values()) {
+    candidates.sort((a, b) => a.id.localeCompare(b.id));
+    const first = candidates[0];
+    const canonical = issues.filter((issue) => packageMatches(issue.text, first)).sort(order);
+    const legacy = issues
+      .filter(
+        (issue) =>
+          !issue.text.includes("<!-- audit-package:") &&
+          candidates.some((c) => matches(issue.text, c)),
+      )
+      .sort(order);
+    const existing = canonical[0] || legacy[0];
+    const records = candidates.map((candidate) => {
+      const finding = result.find((f) => f.id === candidate.id);
+      const related = [...canonical, ...legacy.filter((issue) => matches(issue.text, candidate))];
+      const fingerprint = hash(substantive(candidate));
+      const marker = `<!-- audit-fingerprint:${fingerprint} -->`;
+      const known = related.some(
+        (issue) =>
+          issue.text.includes(marker) ||
+          (!issue.text.includes("<!-- audit-package:") &&
+            !issue.text.includes("<!-- audit-fingerprint:")),
+      );
+      return {
+        candidate,
+        finding,
+        marker,
+        known,
+        record: {
+          id: candidate.id,
+          fingerprint,
+          identity: identity(candidate),
+          relatedIssues: related.map((issue) => issue.html_url),
+          existingMarkers: related.flatMap((issue) =>
+            [...issue.text.matchAll(/<!-- audit-(?:identity|fingerprint):[^>]+ -->/g)].map(
+              (match) => match[0],
+            ),
+          ),
+        },
+      };
+    });
+    // Publish raw package facts once, even if the confirmed subset changes later.
+    const changed = records.filter(({ known }) => !known);
+    let publication;
+    if (changed.length && records.some(({ finding }) => finding.confirmed)) {
+      const cell = (value) =>
+        String(value)
+          .replace(/\|/g, "\\|")
+          .replace(/[\r\n]+/g, " ")
+          .slice(0, 240);
+      const table = candidates
+        .map(
+          (candidate) =>
+            `| ${cell(candidate.aliases.join(", "))} | ${cell(
+              (candidate.vulnerabilities || [])
+                .map((v) => v.summary)
+                .filter(Boolean)
+                .join("; ") || "See scanner artifact; conditions unverified",
+            )} |`,
+        )
+        .join("\n");
+      const packageMarker = `<!-- audit-package:${Buffer.from(JSON.stringify(packageIdentity(first))).toString("base64")} -->`;
+      const body = `Lockfile scanner matches for **${cell(first.ecosystem)} ${cell(first.package)}@${cell(first.version)}** require triage.\n\nDependency scope (production/dev), triggering conditions and reachability have not been verified. A lockfile match alone does not establish production exploitability.\n\n| Advisory | Potential conditions / impact (unverified scanner summary) |\n| --- | --- |\n${table}\n\nFull scanner reports and raw advisory details remain in the audit artifacts. Source: ${input.sha}\n\n${packageMarker}\n${changed.map(({ candidate, marker }) => `${identityMarker(candidate)}\n${marker}`).join("\n")}`;
+      const response = await request(
+        existing ? `${root}/${existing.number}/comments` : root,
+        existing
+          ? { body }
+          : {
+              title:
+                `[osv audit] ${first.ecosystem} ${first.package}@${first.version}: advisory triage`.slice(
+                  0,
+                  256,
+                ),
+              body,
+              labels: ["needs-triage"],
+            },
+      );
+      publication = { decision: existing ? "comment" : "create", issue: response.data.html_url };
+      if (existing) existing.text += `\n${body}`;
+      else issues.push({ ...response.data, state: "open", text: body });
+    }
+    for (const { finding, known, record } of records) {
+      decisions.push({
+        ...record,
+        decision: !finding.confirmed || known || !publication ? "skip" : publication.decision,
+        reason: !finding.confirmed
+          ? finding.reason
+          : known
+            ? "Evidence already recorded, or manual OSV issue has no factual baseline"
+            : "New raw package evidence (reachability unverified)",
+        ...(publication || existing ? { issue: publication?.issue || existing.html_url } : {}),
+      });
+    }
+    write("decisions.json", decisions);
+  }
+  write(
+    "report.md",
+    `# Audit: ${kind}\n\n${decisions.length} candidates.\n\n${decisions.map((d) => `- ${d.id}: **${d.decision}** — ${d.reason}${d.issue ? ` (${d.issue})` : ""}`).join("\n")}\n`,
+  );
+}
 async function publish(input) {
   if (input.error) throw new Error(input.error);
   const result = findings(input);
@@ -526,6 +659,7 @@ async function publish(input) {
       ...issue.commentsData.map((comment) => comment.body),
     ].join("\n");
   }
+  if (kind === "osv") return publishOsv(input, result, issues, root);
   const decisions = [];
   write("decisions.json", decisions);
   for (const finding of result) {
