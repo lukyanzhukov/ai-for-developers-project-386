@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.1](https://github.com/lukyanzhukov/ai-for-developers-project-386/compare/v1.2.0...v1.2.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* **ci:** одна задача OSV на пакет вместо потока advisories ([#32](https://github.com/lukyanzhukov/ai-for-developers-project-386/issues/32)) ([03c9b64](https://github.com/lukyanzhukov/ai-for-developers-project-386/commit/03c9b64f25caccd72957b19d99a70f163b29d843))
+* consolidate OSV alerts by package version ([#32](https://github.com/lukyanzhukov/ai-for-developers-project-386/issues/32)) ([60ba0d7](https://github.com/lukyanzhukov/ai-for-developers-project-386/commit/60ba0d7c064dd7aa93476917f6422d100a3893ea))
+
 ## [1.2.0](https://github.com/lukyanzhukov/ai-for-developers-project-386/compare/v1.1.0...v1.2.0) (2026-11-14)
 
 ### Features
