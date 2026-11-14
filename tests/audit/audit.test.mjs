@@ -1,16 +1,28 @@
 import { test as nodeTest } from "node:test";
 const test = (name, fn) => nodeTest(name, { timeout: 15000 }, fn);
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync as spawnSyncProcess } from "node:child_process";
+// Git hooks export repository paths that override cwd, including in CLI children.
+const subprocessEnv = (env = {}) =>
+  Object.fromEntries(
+    Object.entries({ ...process.env, ...env }).filter(([key]) => !key.startsWith("GIT_")),
+  );
 const spawnSync = (file, args, options = {}) =>
   spawnSyncProcess(file, args, {
     timeout: 10000,
     killSignal: "SIGKILL",
     ...options,
+    env: subprocessEnv(options.env),
   });
+
+const git = (args, options = {}) => {
+  const run = spawnSync("git", args, { encoding: "utf8", ...options });
+  assert.equal(run.status, 0, `git ${args.join(" ")}: ${run.stderr || run.error}`);
+  return run;
+};
 
 const cli = new URL("../../scripts/audit.mjs", import.meta.url).pathname;
 test("invalid replay retains a diagnostic report and fails", () => {
@@ -33,15 +45,15 @@ test("TODO snapshot includes only tracked source with context", () => {
       ["config", "user.email", "test@example.com"],
       ["config", "user.name", "Test"],
     ])
-      spawnSync("git", args, { cwd: dir });
+      git(args, { cwd: dir });
     writeFileSync(
       join(dir, "app.ts"),
       "const first = 1;\nconst second = 2;\nconst third = 3;\n// TODO: reject expired sessions\nexport const alive = true;\nconst fifth = 5;\nconst sixth = 6;\n",
     );
     writeFileSync(join(dir, "lesson.md"), "TODO educational exercise");
     writeFileSync(join(dir, "untracked.ts"), "// FIXME untracked");
-    spawnSync("git", ["add", "app.ts", "lesson.md"], { cwd: dir });
-    spawnSync("git", ["commit", "-m", "fixture"], { cwd: dir });
+    git(["add", "app.ts", "lesson.md"], { cwd: dir });
+    git(["commit", "-m", "fixture"], { cwd: dir });
     const run = spawnSync(process.execPath, [cli, "collect", "todo", join(dir, "output")], {
       cwd: dir,
       env: { ...process.env, GITHUB_REPOSITORY: "owner/repo" },
@@ -57,8 +69,8 @@ test("TODO snapshot includes only tracked source with context", () => {
       join(dir, "app.ts"),
       readFileSync(join(dir, "app.ts"), "utf8").replace("// TODO:", "\n\n// TODO:"),
     );
-    spawnSync("git", ["add", "app.ts"], { cwd: dir });
-    spawnSync("git", ["commit", "-m", "blank lines"], { cwd: dir });
+    git(["add", "app.ts"], { cwd: dir });
+    git(["commit", "-m", "blank lines"], { cwd: dir });
     const repeated = spawnSync(process.execPath, [cli, "collect", "todo", join(dir, "repeated")], {
       cwd: dir,
       env: { ...process.env, GITHUB_REPOSITORY: "owner/repo" },
@@ -81,7 +93,59 @@ const exec = (file, args, options = {}) =>
     timeout: 10000,
     killSignal: "SIGKILL",
     ...options,
+    env: subprocessEnv(options.env),
   });
+test("hook Git environment cannot redirect fixture commands or audit children", async () => {
+  const outer = mkdtempSync(join(tmpdir(), "audit-hook-test-"));
+  try {
+    // The synthetic hook environment points only at this disposable repository.
+    git(["init"], { cwd: outer });
+    git(["config", "user.name", "Outer fixture"], { cwd: outer });
+    git(["config", "user.email", "outer@example.com"], { cwd: outer });
+    writeFileSync(join(outer, "outer.ts"), "// TODO outer repository must stay untouched\n");
+    git(["add", "outer.ts"], { cwd: outer });
+    git(["commit", "-m", "outer fixture"], { cwd: outer });
+    const config = readFileSync(join(outer, ".git/config"));
+    const index = readFileSync(join(outer, ".git/index"));
+    const env = {
+      ...process.env,
+      GIT_DIR: join(outer, ".git"),
+      GIT_WORK_TREE: outer,
+      GIT_INDEX_FILE: join(outer, ".git/index"),
+      GIT_COMMON_DIR: join(outer, ".git"),
+      GITHUB_REPOSITORY: "owner/repo",
+    };
+    const fixture = join(outer, "nested");
+    mkdirSync(fixture);
+    git(["init"], { cwd: fixture, env });
+    git(["config", "user.name", "Nested fixture"], { cwd: fixture, env });
+    git(["config", "user.email", "nested@example.com"], { cwd: fixture, env });
+    assert.deepEqual(readFileSync(join(outer, ".git/config")), config);
+    assert.deepEqual(readFileSync(join(outer, ".git/index")), index);
+    writeFileSync(join(fixture, "app.ts"), "// TODO nested fixture candidate\n");
+    git(["add", "app.ts"], { cwd: fixture, env });
+    git(["commit", "-m", "nested fixture"], { cwd: fixture, env });
+    for (const run of [spawnSync, exec]) {
+      const output = join(fixture, run === spawnSync ? "sync" : "async");
+      const result = await run(process.execPath, [cli, "collect", "todo", output], {
+        cwd: fixture,
+        env,
+        encoding: "utf8",
+      });
+      if (run === spawnSync) assert.equal(result.status, 0, result.stderr);
+      const snapshot = JSON.parse(readFileSync(join(output, "input.json"), "utf8"));
+      assert.deepEqual(
+        snapshot.candidates.map(({ path, text }) => ({ path, text })),
+        [{ path: "app.ts", text: "// TODO nested fixture candidate" }],
+      );
+    }
+    assert.deepEqual(readFileSync(join(outer, ".git/config")), config);
+    assert.deepEqual(readFileSync(join(outer, ".git/index")), index);
+  } finally {
+    rmSync(outer, { recursive: true, force: true });
+  }
+});
+
 test("publisher finds a closed manual issue on later pages and comments once for new evidence", async () => {
   const dir = mkdtempSync(join(tmpdir(), "audit-test-"));
   const comments = [];
