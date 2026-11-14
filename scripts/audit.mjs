@@ -555,17 +555,21 @@ async function publishOsv(input, result, issues, root) {
       )
       .sort(order);
     const existing = canonical[0] || legacy[0];
+    const manualWithoutBaseline =
+      !canonical.length && existing && !existing.text.includes("<!-- audit-fingerprint:");
     const records = candidates.map((candidate) => {
       const finding = result.find((f) => f.id === candidate.id);
       const related = [...canonical, ...legacy.filter((issue) => matches(issue.text, candidate))];
       const fingerprint = hash(substantive(candidate));
       const marker = `<!-- audit-fingerprint:${fingerprint} -->`;
-      const known = related.some(
-        (issue) =>
-          issue.text.includes(marker) ||
-          (!issue.text.includes("<!-- audit-package:") &&
-            !issue.text.includes("<!-- audit-fingerprint:")),
-      );
+      const known =
+        manualWithoutBaseline ||
+        related.some(
+          (issue) =>
+            issue.text.includes(marker) ||
+            (!issue.text.includes("<!-- audit-package:") &&
+              !issue.text.includes("<!-- audit-fingerprint:")),
+        );
       return {
         candidate,
         finding,
@@ -590,6 +594,9 @@ async function publishOsv(input, result, issues, root) {
     if (changed.length && records.some(({ finding }) => finding.confirmed)) {
       const cell = (value) =>
         String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
           .replace(/\|/g, "\\|")
           .replace(/[\r\n]+/g, " ")
           .slice(0, 240);
@@ -612,7 +619,7 @@ async function publishOsv(input, result, issues, root) {
           ? { body }
           : {
               title:
-                `[osv audit] ${first.ecosystem} ${first.package}@${first.version}: advisory triage`.slice(
+                `[osv audit] ${cell(first.ecosystem)} ${cell(first.package)}@${cell(first.version)}: advisory triage`.slice(
                   0,
                   256,
                 ),
