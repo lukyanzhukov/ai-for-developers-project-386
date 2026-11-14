@@ -74,8 +74,20 @@ try {
     );
     await writeFile(join(destination, "exit-code.txt"), `${run.status ?? "null"}\n`);
     let validReport = false;
+    let observedIds = [];
     try {
-      validReport = Array.isArray(JSON.parse(run.stdout).results);
+      const report = JSON.parse(run.stdout);
+      const packages = report.results.flatMap((item) => item.packages);
+      observedIds = [
+        ...new Set(packages.flatMap((item) => (item.vulnerabilities ?? []).map((vuln) => vuln.id))),
+      ].sort();
+      validReport =
+        packages.some(
+          (item) => item.package.name === "minimist" && item.package.version === scenario.version,
+        ) &&
+        (scenario.expected === 1
+          ? observedIds.length === 1 && observedIds[0] === advisory
+          : observedIds.length === 0);
     } catch {
       // Empty or malformed scanner output is recorded as a failed exercise.
     }
@@ -83,6 +95,7 @@ try {
       ...scenario,
       actual: run.status,
       signal: run.signal,
+      observedIds,
       lockfileSha256: createHash("sha256").update(lockfile).digest("hex"),
       passed: run.status === scenario.expected && validReport,
     });
