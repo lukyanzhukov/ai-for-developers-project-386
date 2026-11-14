@@ -1,0 +1,38 @@
+name: OpenCode
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+concurrency:
+  group: opencode-${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  opencode:
+    if: |
+      github.event.comment.user.login == 'lukyanzhukov' &&
+      (
+        contains(github.event.comment.body, '/oc') ||
+        contains(github.event.comment.body, '/opencode')
+      )
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Run OpenCode
+        uses: anomalyco/opencode/github@810c0eba1a7348036f8bdf61e6632d0c36c6876c # v1.19.5
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: opencode/big-pickle
