@@ -138,3 +138,84 @@ DEPLOYMENT_URL=https://call-calendar-386-o6lw.onrender.com mise run deployment:c
 ```
 
 Команда проверяет создание типа, запись гостя, отказ при конфликте и список владельца. Она добавляет синтетические данные; нужен свободный слот в ближайшие 14 дней.
+
+## Плановые аудиты
+
+Два независимых GitHub Actions workflow работают на `main`: `todo-audit.yml` ищет
+подтверждённые TODO/FIXME по понедельникам в **02:17 UTC / 09:17 Asia/Novokuznetsk**;
+`lockfile-audit.yml` проверяет `pnpm-lock.yaml` ежедневно в **01:37 UTC / 08:37
+Asia/Novokuznetsk**. Запуски одного аудита сериализованы без отмены предыдущего;
+разные аудиты друг друга не ждут. Расписание GitHub может запускаться с задержкой.
+
+OpenCode **1.19.5** использует бесплатную `opencode/big-pickle` для `model` и
+`small_model`, генерация заголовка отключена. Нужен repository secret
+`OPENCODE_API_KEY`. Агент получает снимок как недоверенные данные; инструменты,
+изменения файлов и исполнение команд запрещены. У job анализа только
+`contents:read`, `issues:read`, `actions:read`; `issues:write` есть только у
+отдельного publisher с `GITHUB_TOKEN`. OpenCode App и дополнительные write-токены
+не нужны. Все Actions закреплены полными SHA, OSV Scanner **2.7.1** — SHA256
+проверенного Linux-бинарника. Ни один аудит не меняет зависимости или lockfile.
+
+TODO/FIXME извлекаются из tracked source на SHA запуска с путём, строкой и
+контекстом. Generated/vendor/build/node_modules, навыки и учебные тексты исключены;
+агент отклоняет учебные, устаревшие и неподтверждённые пометки с объяснением.
+OSV сохраняет исходный JSON, stderr, exit code и число пакетов (`--all-packages`).
+Код `0` означает чистый результат, `1` — находки: агент сначала оформляет отчёт,
+затем job аудита завершается ошибкой, а publisher обрабатывает подтверждённые
+находки. `127` — ошибка сканера, `128` — нет распознанных пакетов; остальные коды,
+таймауты, пустой или некорректный ответ агента тоже дают ошибку с диагностикой,
+без выдуманной уязвимости. Отсутствие кандидатов создаёт пустой валидный отчёт.
+
+Publisher просматривает все страницы открытых и закрытых issues и комментариев,
+включая ручные задачи. Ключ TODO — путь и текст без номера строки; ключ OSV —
+экосистема, пакет, версия и группа пересекающихся advisory aliases. Маркеры в
+issues/комментариях хранят идентичность и fingerprint фактов, без времени и URL
+запуска. Одинаковые сведения повторно не публикуются; новые сведения добавляют
+один комментарий в существующую задачу, включая закрытую. Автозакрытия и reopen
+нет. Решение `create`/`comment`/`skip`, причина, fingerprint и связанные URL
+сохраняются в `decisions.json`. Ошибка API делает job публикации неуспешным.
+
+Результаты доступны в summary и artifacts (30 дней): `todo-audit-input` /
+`osv-audit-input` содержат `input.json`; `*-audit-report` — результат агента,
+Markdown и сырую диагностику; `*-audit-publication` — решения publisher и его
+диагностику. Artifacts загружаются также при ошибках. Отчёты не коммитятся.
+
+После разрешённого слияния можно запустить каждый workflow вручную:
+
+```bash
+gh workflow run todo-audit.yml --ref main
+gh workflow run lockfile-audit.yml --ref main
+```
+
+Для повторной обработки сохранённого снимка укажите ID завершённого запуска
+того же workflow в этом репозитории на `main` (пока его artifact не истёк):
+
+```bash
+gh workflow run todo-audit.yml --ref main -f source_run_id=123456789
+gh workflow run lockfile-audit.yml --ref main -f source_run_id=123456790
+```
+
+Replay проверяет репозиторий, workflow, исходный SHA и схему; скачивает только
+свой input artifact, заново анализирует данные и применяет ту же дедупликацию.
+Publisher исполняет код из доверенного checkout `main`, не из artifact. Dispatch
+из другой ветки пропускает оба job. Локальная проверка CLI и fake GitHub boundary:
+`mise run audit:test` (также входит в `mise run check`).
+
+Изолированная учебная проверка `ignoreUntil` запускается только вручную:
+
+```bash
+gh workflow run lockfile-audit.yml --ref main -f exercise_ignore_until=true
+```
+
+Она создаёт временные lockfile с одной уязвимой и исправленной версией вне
+рабочего проекта, проверяет future/expired исключение с конкретным advisory и
+причиной, сохраняет raw reports/exit codes в artifact. Часы и исключения рабочего
+проекта не меняются. Для локального запуска: `node scripts/osv-ignore-lab.mjs
+--scanner /absolute/path/to/osv-scanner --output /tmp/osv-ignore-lab`.
+
+Демонстрация после отдельного разрешения слияния: повторить снимок и проверить
+отсутствие дубликатов, затем сравнить `gh run cancel RUN_ID` (отмена одного
+запуска) с `gh workflow disable todo-audit.yml` и `gh workflow enable
+ todo-audit.yml` (выключение/включение будущих запусков). Эти команды здесь только
+инструкция; фактические запуски, публикация issues и пользовательская приёмка
+сообщаются отдельно.

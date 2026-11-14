@@ -80,8 +80,12 @@ run = "pnpm run fix"
 [tasks."check:commits"]
 run = "node scripts/check-commits.mjs"
 
+[tasks."audit:test"]
+run = "node --test tests/audit/*.test.mjs"
+
 [tasks.check]
 run = [
+  "mise run audit:test",
   "mise run generate:check",
   "hk check --all",
   "mise run typecheck",
